@@ -1,0 +1,6 @@
+[skill]
+  skill_package = "water-leak-repair.skill"
+  name = "water-leak-repair"
+  description = "房屋漏水原因精准定位与永久修复；适用于墙面渗水、天花滴水、管道暗漏、防水层失效等场景；提供工具选择、检测流程与修复方案"
+  project_name = "漏水维修技能"
+  project_description = "房屋漏水精准定位与永久修复"
