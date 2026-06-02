@@ -26,17 +26,21 @@
 
 ## 🚀 使用方式
 
-这些 Skill 可以安装到 [WorkBuddy](https://www.codebuddy.cn/docs/workbuddy/Overview) 中，让 AI 助手在对话中自动调用：
+每个 Skill 本质上是一组 Markdown 文件，可以被任何支持 Skill 机制的 AI Agent 加载使用。
 
-1. 克隆本仓库到本地
-2. 将 Skill 目录放入 `~/.workbuddy/skills/`（用户级）或项目根目录下的 `.workbuddy/skills/`（项目级）
-3. 在 WorkBuddy 中直接描述需求，AI 会自动识别并加载对应 Skill
+**通用方式（任意支持 Skill 的 Agent）：**
+1. 克隆或下载本仓库
+2. 将 Skill 目录（如 `water-leak-repair/`）放入 Agent 的 skills 目录
+3. 在对话中描述需求，Agent 会自动识别并加载对应 Skill
+
+**也可以直接引用：**  
+将 `SKILL.md` 及 `references/` 中的内容粘贴到任意 AI 对话的 System Prompt 或上下文中，同样有效。
 
 ---
 
 ## 📝 关于 Skills
 
-WorkBuddy Skills 是一种结构化的知识与工作流打包方式，让 AI 助手能在特定领域发挥专家水平。
+Skills 是一种结构化的知识与工作流打包方式，让 AI 助手能在特定领域发挥专家水平。
 
 - **SKILL.md** — Skill 的核心描述文件，包含任务目标、方法论与操作步骤
 - **references/** — 补充知识库，供 AI 在执行任务时检索参考
