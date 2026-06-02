@@ -1,6 +1,6 @@
-# 🛠️ My WorkBuddy Skills
+# 🛠️ My Skills
 
-一个收录实用 WorkBuddy Skills 的个人仓库，持续整理来自生活与工作的知识沉淀。
+一个收录实用 Skills 的个人仓库，持续整理来自生活与工作的知识沉淀。
 
 每个 Skill 都是一份结构化的「经验包」，让 AI 助手在特定场景下具备专家级能力。
 
@@ -28,7 +28,16 @@
 
 每个 Skill 本质上是一组 Markdown 文件，可以被任何支持 Skill 机制的 AI Agent 加载使用。
 
-**通用方式（任意支持 Skill 的 Agent）：**
+**🤖 让 AI Agent 自动安装：**
+
+直接把下面这句话发给你的 AI Agent 即可：
+
+> 请从 `https://github.com/kongzong/workbuddy-skills` 下载 `water-leak-repair` skill 并安装到我的 skills 目录。
+
+Agent 会自动完成：克隆仓库 → 找到 Skill 目录 → 放入对应位置。  
+替换 Skill 名称即可安装其他 Skill。
+
+**📋 手动安装（通用方式）：**
 1. 克隆或下载本仓库
 2. 将 Skill 目录（如 `water-leak-repair/`）放入 Agent 的 skills 目录
 3. 在对话中描述需求，Agent 会自动识别并加载对应 Skill
