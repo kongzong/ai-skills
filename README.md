@@ -32,7 +32,7 @@
 
 直接把下面这句话发给你的 AI Agent 即可：
 
-> 请从 `https://github.com/kongzong/workbuddy-skills` 下载 `water-leak-repair` skill 并安装到我的 skills 目录。
+> 请从 `https://github.com/kongzong/ai-skills` 下载 `water-leak-repair` skill 并安装到我的 skills 目录。
 
 Agent 会自动完成：克隆仓库 → 找到 Skill 目录 → 放入对应位置。  
 替换 Skill 名称即可安装其他 Skill。
