@@ -41,6 +41,24 @@
 
 ---
 
+### 🐘 [dolibarr-development](./dolibarr-development/) — Dolibarr ERP/CRM 模块开发
+
+> 面向 Dolibarr ERP/CRM 的开发者 Skill（核心贡献者与外部模块开发通用）。内容偏英文技术文档，适合实际写代码时检索。
+
+需要开发或扩展 Dolibarr 模块（外部/自定义）？这个 Skill 覆盖从骨架生成到上架的完整链路：
+
+- 🧩 **模块骨架与描述符** —— Module Builder 生成、modMyModule 描述符、`$this->numero` 唯一编号
+- 🪝 **扩展点实操** —— Hooks（页面注入）、Triggers（业务事件响应）、Tabs、Menus、Permissions、Boxes、Extrafields
+- 🗄️ **数据层** —— SQL 表规范（`llx_` 前缀、InnoDB、rowid 主键）、DAO/Active Record 类 CRUD
+- 📄 **进阶特性** —— PDF/ODT 模板、Canvas 表单替换、自定义编号模块、皮肤主题、REST API 集成、批量导入导出
+- 🛡️ **质量与交付** —— 编码规范（PSR-12 / SQL / MVC）、PHPUnit/XDebug/phpcs 调试、makepack 打包发布到 Dolistore、性能与安全最佳实践、30+ 常见故障排查
+
+**触发场景**：开发/扩展 Dolibarr 模块、实现 hook 或 trigger、设计 SQL 表与 DAO、添加菜单/权限/标签页、编写 PDF 模板、遵循 Dolibarr 编码规范、排查模块报错  
+**内容包含**：
+- 16 个专题参考文档（module-structure / database-design / coding-rules / hooks-triggers / technical-components / troubleshooting / pdf-templates / canvas-system / numbering-modules / skins-themes / api-rest / import-export / testing-debugging / deployment-packaging / performance-best-practices）
+
+---
+
 ## 🚀 使用方式
 
 每个 Skill 本质上是一组 Markdown 文件，可以被任何支持 Skill 机制的 AI Agent 加载使用。
@@ -52,7 +70,7 @@
 > 请从 `https://github.com/kongzong/ai-skills` 下载 `water-leak-repair` skill 并安装到我的 skills 目录。
 
 Agent 会自动完成：克隆仓库 → 找到 Skill 目录 → 放入对应位置。  
-替换 Skill 名称即可安装其他 Skill。
+替换 Skill 名称即可安装其他 Skill（例如 `pm-leading`、`dolibarr-development`）。
 
 **📋 手动安装（通用方式）：**
 1. 克隆或下载本仓库
