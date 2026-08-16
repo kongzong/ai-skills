@@ -1,31 +1,31 @@
-# Dolibarr Skins（主题）开发指南
+# Dolibarr 皮肤开发指南
 
 **Source:** https://wiki.dolibarr.org/index.php/Skins
 
 ---
 
-## Skins 系统概述
+## 皮肤系统概述
 
-Dolibarr 的 Skins 系统允许开发者创建完整的自定义主题，改变应用程序的外观、配色和用户界面。Skins 与简单的 CSS 主题不同——它是一个完整的目录结构，包含 CSS、图片资源、配置文件和可选的模板文件。
+Dolibarr 的皮肤系统允许开发者创建完整的自定义主题，改变应用程序的外观、配色和用户界面。皮肤与简单的 CSS 主题不同——它是一个完整的目录结构，包含 CSS、图片资源、配置文件和可选的模板文件。
 
-### Skins 与 CSS 主题的区别
+### 皮肤与 CSS 主题的区别
 
-- **Skin**：完整的主题包，包括目录结构、CSS 文件、图片资源、配置文件
+- **皮肤**：完整的主题包，包括目录结构、CSS 文件、图片资源、配置文件
 - **CSS 主题**：仅用于样式覆盖的单个 CSS 文件
 - **Dolibarr 主题系统**：支持用户级和全局级的主题选择
 
-### 标准 Skins（Eldy、MD 等）
+### 标准皮肤（Eldy、MD 等）
 
-Dolibarr 核心包含以下标准 Skins：
+Dolibarr 核心包含以下标准皮肤：
 
 - **eldy** - 经典的企业级主题，从早期版本开始支持
 - **md** - Material Design 风格的现代主题
 - **elydesktop** - 桌面优化版本
 - **elysktop** - 移动优化版本
 
-### Skin 的作用范围
+### 皮肤的作用范围
 
-Skins 可以应用于：
+皮肤可以应用于：
 
 1. **全局应用**：在 `Setup > Display` 设置默认主题
 2. **用户级应用**：在用户配置中选择个人偏好的主题
@@ -33,16 +33,16 @@ Skins 可以应用于：
 
 ---
 
-## Skin 目录结构
+## 皮肤目录结构
 
-Skins 存储在 `htdocs/theme/` 目录下，每个 Skin 对应一个子目录。
+皮肤存储在 `htdocs/theme/` 目录下，每个皮肤对应一个子目录。
 
-### 标准 Skin 目录树
+### 标准皮肤目录树
 
 ```
 htdocs/theme/myskin/
 ├── AUTHOR                          ← 作者信息文件
-├── skin.inc.php                    ← Skin 配置文件（可选）
+├── skin.inc.php                    ← 皮肤配置文件（可选）
 ├── README.md                       ← 说明文档
 ├── myskin.css                      ← 主 CSS 文件（必需）
 ├── myskin.css.php                  ← PHP 动态 CSS（可选）
@@ -79,7 +79,7 @@ Website: https://example.com
 Version: 1.0.0
 Dolibarr Compatibility: 15.0+
 License: GPL v3.0+
-Description: A modern and clean theme for Dolibarr
+Description: 一个现代简洁的 Dolibarr 主题
 ```
 
 #### myskin.css
@@ -113,14 +113,14 @@ echo "
 
 ---
 
-## 创建自定义 Skin
+## 创建自定义皮肤
 
-### 第 1 步：复制现有 Skin
+### 第 1 步：复制现有皮肤
 
-首先，以现有 Skin 为基础创建新的 Skin。建议使用 `eldy` 或 `md` 作为基础：
+首先，以现有皮肤为基础创建新的皮肤。建议使用 `eldy` 或 `md` 作为基础：
 
 ```bash
-# 复制 eldy Skin 作为基础
+# 复制 eldy 皮肤作为基础
 cp -r htdocs/theme/eldy htdocs/theme/myskin
 cd htdocs/theme/myskin
 
@@ -140,7 +140,7 @@ Website: https://yourwebsite.com
 Version: 1.0.0
 Dolibarr Compatibility: 15.0+
 License: GPL v3.0+
-Description: Custom theme for organization branding
+Description: 用于组织品牌定制的自定义主题
 ```
 
 ### 第 3 步：修改 CSS 样式
@@ -323,7 +323,7 @@ https://your-dolibarr.com/index.php?theme=myskin
 
 ---
 
-## Skin 配置文件
+## 皮肤配置文件
 
 ### skin.inc.php 文件
 
@@ -332,28 +332,28 @@ https://your-dolibarr.com/index.php?theme=myskin
 ```php
 <?php
 /**
- * Configuration file for myskin Skin
+ * myskin 皮肤的配置文件
  * 
- * This file defines skin properties, colors, fonts, and other settings
- * that can be customized without modifying CSS files directly.
+ * 此文件定义皮肤属性、颜色、字体和其他设置，
+ * 无需直接修改 CSS 文件即可进行自定义。
  */
 
-// Define skin name
+// 定义皮肤名称
 $this->name = 'My Custom Skin';
 
-// Define skin version
+// 定义皮肤版本
 $this->version = '1.0.0';
 
-// Define skin author
+// 定义皮肤作者
 $this->author = 'John Developer';
 
-// Define skin description
+// 定义皮肤描述
 $this->description = 'A modern and customizable theme for Dolibarr';
 
-// Define supported color modes
+// 定义支持的颜色模式
 $this->colorModes = array('light', 'dark');
 
-// Color configuration
+// 颜色配置
 $this->colors = array(
     'primary' => '#2c3e50',
     'secondary' => '#3498db',
@@ -365,7 +365,7 @@ $this->colors = array(
     'dark' => '#2c3e50',
 );
 
-// Font configuration
+// 字体配置
 $this->fonts = array(
     'family' => 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     'size-base' => '14px',
@@ -374,14 +374,14 @@ $this->fonts = array(
     'size-h3' => '18px',
 );
 
-// Typography settings
+// 排版设置
 $this->typography = array(
     'font-weight-normal' => 400,
     'font-weight-medium' => 500,
     'font-weight-bold' => 600,
 );
 
-// Spacing configuration (in pixels)
+// 间距配置（以像素为单位）
 $this->spacing = array(
     'xs' => '4px',
     'sm' => '8px',
@@ -390,7 +390,7 @@ $this->spacing = array(
     'xl' => '24px',
 );
 
-// Border radius settings
+// 边框圆角设置
 $this->borderRadius = array(
     'small' => '2px',
     'default' => '4px',
@@ -398,28 +398,28 @@ $this->borderRadius = array(
     'large' => '8px',
 );
 
-// Shadow definitions
+// 阴影定义
 $this->shadows = array(
     'sm' => '0 1px 2px rgba(0,0,0,0.05)',
     'md' => '0 4px 6px rgba(0,0,0,0.1)',
     'lg' => '0 10px 15px rgba(0,0,0,0.1)',
 );
 
-// Transition settings
+// 过渡设置
 $this->transitions = array(
     'fast' => '150ms',
     'normal' => '300ms',
     'slow' => '500ms',
 );
 
-// Dolibarr compatibility
+// Dolibarr 兼容性
 $this->minDolibarrVersion = '15.0.0';
-$this->maxDolibarrVersion = null;  // No upper limit
+$this->maxDolibarrVersion = null;  // 无上限
 
-// Module dependencies
+// 模块依赖
 $this->dependencies = array();
 
-// Custom hook contexts for this skin
+// 此皮肤的自定义钩子上下文
 $this->hookContexts = array();
 ?>
 ```
@@ -428,10 +428,10 @@ $this->hookContexts = array();
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `name` | string | Skin 的显示名称 |
-| `version` | string | Skin 版本号（遵循 semantic versioning） |
-| `author` | string | Skin 作者名称 |
-| `description` | string | Skin 的简短描述 |
+| `name` | string | 皮肤的显示名称 |
+| `version` | string | 皮肤版本号（遵循语义化版本规范） |
+| `author` | string | 皮肤作者名称 |
+| `description` | string | 皮肤的简短描述 |
 | `colorModes` | array | 支持的颜色模式（light、dark 等） |
 | `colors` | array | 主题颜色定义 |
 | `fonts` | array | 字体族、大小配置 |
@@ -569,7 +569,7 @@ select:focus {
 
 ### 响应式设计考虑
 
-确保你的 Skin 在所有设备上都能正常显示：
+确保你的皮肤在所有设备上都能正常显示：
 
 ```css
 /* 移动设备优先的响应式设计 */
@@ -755,7 +755,7 @@ body.dark-mode {
 
 ### 色彩对比度和可访问性
 
-确保你的 Skin 符合 WCAG 2.1 AA 标准的对比度要求：
+确保你的皮肤符合 WCAG 2.1 AA 标准的对比度要求：
 
 ```css
 /* 确保足够的对比度 */
@@ -811,13 +811,13 @@ a:visited {
 <!-- templates/custom-layout.tpl.php -->
 <?php
 /**
- * Custom template file for myskin
+ * myskin 的自定义模板文件
  * 
- * Accessible variables:
- * - $object: Current object being displayed
- * - $user: Current user
- * - $conf: Dolibarr configuration
- * - $langs: Language object for translations
+ * 可访问的变量：
+ * - $object：当前显示的对象
+ * - $user：当前用户
+ * - $conf：Dolibarr 配置
+ * - $langs：用于翻译的语言对象
  */
 ?>
 
@@ -932,9 +932,9 @@ a:visited {
 
 ## 发布和分发
 
-### 打包 Skin
+### 打包皮肤
 
-使用官方打包脚本为分发准备你的 Skin：
+使用官方打包脚本为分发准备你的皮肤：
 
 ```bash
 # 运行官方打包脚本
@@ -954,7 +954,7 @@ perl build/makepack-dolibarrtheme.pl myskin
 
 ### Dolistore 发布
 
-要在官方 Dolistore 上发布你的 Skin：
+要在官方 Dolistore 上发布你的皮肤：
 
 1. **创建 Dolistore 账户**：在 https://www.dolistore.com 上注册
 2. **准备元数据**：
@@ -966,41 +966,41 @@ perl build/makepack-dolibarrtheme.pl myskin
 4. **设置定价**：免费或付费（Dolistore 提供销售分成）
 5. **提交审核**：等待 Dolistore 团队的审核
 
-### Skin 兼容性声明
+### 皮肤兼容性声明
 
 在 `AUTHOR` 或 `README.md` 中明确声明兼容性信息：
 
 ```
-# Compatibility Matrix
+# 兼容性矩阵
 
-| Dolibarr Version | Status | Notes |
+| Dolibarr 版本 | 状态 | 备注 |
 |-----------------|--------|-------|
-| 14.x | Supported | Full compatibility |
-| 15.x | Supported | Full compatibility |
-| 16.x | Supported | Full compatibility |
-| 17.x | Testing | In beta testing |
-| 18.x | Not Supported | To be tested |
+| 14.x | 支持 | 完全兼容 |
+| 15.x | 支持 | 完全兼容 |
+| 16.x | 支持 | 完全兼容 |
+| 17.x | 测试中 | 处于 beta 测试阶段 |
+| 18.x | 不支持 | 待测试 |
 
-## Browser Support
+## 浏览器支持
 
-| Browser | Version | Status |
+| 浏览器 | 版本 | 状态 |
 |---------|---------|--------|
-| Chrome | 90+ | Fully supported |
-| Firefox | 88+ | Fully supported |
-| Safari | 14+ | Fully supported |
-| Edge | 90+ | Fully supported |
-| IE | 11 | Not supported |
+| Chrome | 90+ | 完全支持 |
+| Firefox | 88+ | 完全支持 |
+| Safari | 14+ | 完全支持 |
+| Edge | 90+ | 完全支持 |
+| IE | 11 | 不支持 |
 
-## Mobile Devices
+## 移动设备
 
-- iOS Safari: iOS 12+
-- Chrome Mobile: Android 8+
-- Samsung Internet: 12+
+- iOS Safari：iOS 12+
+- Chrome Mobile：Android 8+
+- Samsung Internet：12+
 
-## Known Issues
+## 已知问题
 
-- Minor rendering differences in IE 11 (recommended to use modern browsers)
-- Some CSS grid features not supported in older browsers
+- IE 11 中存在轻微渲染差异（建议使用现代浏览器）
+- 某些 CSS grid 特性在旧浏览器中不受支持
 ```
 
 ---
@@ -1066,11 +1066,11 @@ perl build/makepack-dolibarrtheme.pl myskin
 
 ### 版本升级时的考虑
 
-升级 Dolibarr 时保持 Skin 兼容性：
+升级 Dolibarr 时保持皮肤兼容性：
 
-1. **测试新版本**：在新 Dolibarr 版本上完全测试 Skin
+1. **测试新版本**：在新 Dolibarr 版本上完全测试皮肤
 2. **检查破坏性变化**：查看发布说明中的 CSS 类变化
-3. **更新版本号**：根据 semantic versioning 更新
+3. **更新版本号**：根据语义化版本规范更新
 4. **保持向后兼容**：尽可能支持旧版本
 
 ```php
@@ -1082,7 +1082,7 @@ $this->testedVersions = array('15.0', '16.0', '17.0');
 
 ### 多语言支持
 
-如果 Skin 包含文本内容，创建语言文件：
+如果皮肤包含文本内容，创建语言文件：
 
 ```
 htdocs/theme/myskin/
@@ -1128,15 +1128,15 @@ $langs->add("SecondaryColor", "Couleur Secondaire");
 
 ## 总结
 
-创建和维护自定义 Dolibarr Skin 需要对 Dolibarr 架构、CSS 和 web 开发的深入理解。通过遵循本指南的最佳实践，你可以创建出专业、高效且易于维护的自定义主题。
+创建和维护自定义 Dolibarr 皮肤需要对 Dolibarr 架构、CSS 和 web 开发的深入理解。通过遵循本指南的最佳实践，你可以创建出专业、高效且易于维护的自定义主题。
 
 关键要点：
 
-1. 始终以现有 Skin 为基础
+1. 始终以现有皮肤为基础
 2. 使用 CSS 变量提高可维护性
 3. 测试所有设备和浏览器
 4. 提供暗黑模式支持
-5. 文档化你的 Skin 并声明兼容性
+5. 文档化你的皮肤并声明兼容性
 6. 考虑性能和可访问性
 7. 在发布前充分测试
 

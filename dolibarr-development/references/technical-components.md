@@ -1,12 +1,12 @@
-# Dolibarr Technical Components Reference
+# Dolibarr 技术组件参考
 
 Source: https://wiki.dolibarr.org/index.php/Developer_documentation
 
 ---
 
-## Page Bootstrap (main.inc.php)
+## 页面引导 (main.inc.php)
 
-Every PHP page must load `main.inc.php`. Use the multi-path pattern:
+每个 PHP 页面都必须加载 `main.inc.php`。使用多路径模式：
 
 ```php
 <?php
@@ -26,11 +26,11 @@ if (!$res && file_exists("../../main.inc.php")) $res = @include("../../main.inc.
 if (!$res) die("Include of main fails");
 ```
 
-After include, available: `$db`, `$user`, `$conf`, `$langs`, `$mysoc`
+包含之后，可用：`$db`、`$user`、`$conf`、`$langs`、`$mysoc`
 
 ---
 
-## DAO / Business Object Class Pattern
+## DAO 业务对象类模式
 
 ```php
 <?php
@@ -39,14 +39,14 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 class MyObject extends CommonObject
 {
     public $element    = 'myobject';
-    public $table_element = 'mymodule_object';  // without llx_ prefix
+    public $table_element = 'mymodule_object';  // 不含 llx_ 前缀
     public $picto      = 'mymodule@mymodule';
 
-    // Table fields (mirrors DB columns)
+    // 表字段（对应数据库列）
     public $ref;
     public $status;
     public $date_creation;
-    public $fk_soc;         // foreign key to llx_societe
+    public $fk_soc;         // 指向 llx_societe 的外键
     // …
 
     public function __construct($db)
@@ -108,79 +108,79 @@ class MyObject extends CommonObject
 
 ---
 
-## Tabs System
+## 标签页系统
 
-### Show tabs on your own page
+### 在你自己的页面上显示标签页
 ```php
-// 1. Include object class and lib
+// 1. 包含对象类和库
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 
-// 2. Load object
+// 2. 加载对象
 $id = GETPOST('id', 'int');
 $thirdparty = new Societe($db);
 $result = $thirdparty->fetch($id);
 
-// 3. Get tab list
+// 3. 获取标签页列表
 $head = societe_prepare_head($thirdparty);
 
-// 4. Render tabs
+// 4. 渲染标签页
 dol_fiche_head($head, 'mytabcode', $langs->trans('ThirdParty'), -1, 'company');
-// ... your content ...
+// ... 你的内容 ...
 dol_fiche_end();
 ```
 
-Object-specific lib/function pairs:
-| Object | Class file | Lib file | prepare_head function |
+各对象对应的 lib/函数组合：
+| 对象 | 类文件 | Lib 文件 | prepare_head 函数 |
 |---|---|---|---|
-| Thirdparty | `societe/class/societe.class.php` | `core/lib/company.lib.php` | `societe_prepare_head()` |
-| Product | `product/class/product.class.php` | `core/lib/product.lib.php` | `product_prepare_head()` |
-| Invoice | `compta/facture/class/facture.class.php` | `core/lib/invoice.lib.php` | `facture_prepare_head()` |
-| Order | `commande/class/commande.class.php` | `core/lib/order.lib.php` | `commande_prepare_head()` |
-| Contact | `contact/class/contact.class.php` | `core/lib/contact.lib.php` | `contact_prepare_head()` |
-| Contract | `contrat/class/contrat.class.php` | `core/lib/contract.lib.php` | `contract_prepare_head()` |
-| Member | `adherents/class/adherent.class.php` | `core/lib/member.lib.php` | `member_prepare_head()` |
+| 第三方（公司） | `societe/class/societe.class.php` | `core/lib/company.lib.php` | `societe_prepare_head()` |
+| 产品 | `product/class/product.class.php` | `core/lib/product.lib.php` | `product_prepare_head()` |
+| 发票 | `compta/facture/class/facture.class.php` | `core/lib/invoice.lib.php` | `facture_prepare_head()` |
+| 订单 | `commande/class/commande.class.php` | `core/lib/order.lib.php` | `commande_prepare_head()` |
+| 联系人 | `contact/class/contact.class.php` | `core/lib/contact.lib.php` | `contact_prepare_head()` |
+| 合同 | `contrat/class/contrat.class.php` | `core/lib/contract.lib.php` | `contract_prepare_head()` |
+| 会员 | `adherents/class/adherent.class.php` | `core/lib/member.lib.php` | `member_prepare_head()` |
 
 ---
 
-## Translation System
+## 翻译系统
 
-### Lang files
-Location: `mymodule/langs/en_US/mymodule.lang`
+### 语言文件
+位置：`mymodule/langs/en_US/mymodule.lang`
 
 ```ini
 MyKey=My translated string
 MyKeyWithParam=Hello %s, you have %d messages
 ```
 
-### Usage in PHP
+### 在 PHP 中使用
 ```php
 $langs->load('mymodule@mymodule');
 echo $langs->trans('MyKey');
 echo $langs->trans('MyKeyWithParam', $username, $count);
 ```
 
-### Load in module descriptor
-Auto-loaded from `$this->langfiles = array('mymodule@mymodule')` in descriptor.
+### 在模块描述符中加载
+通过描述符中的 `$this->langfiles = array('mymodule@mymodule')` 自动加载。
 
 ---
 
-## Permission System
+## 权限系统
 
-### Check permissions in pages
+### 在页面中检查权限
 ```php
-// Check user is logged in (done by main.inc.php)
-// Check specific permission
+// 检查用户已登录（由 main.inc.php 完成）
+// 检查特定权限
 if (!$user->rights->mymodule->read) {
     accessforbidden();
 }
-// For write
+// 用于写入
 if (!$user->rights->mymodule->write) {
     accessforbidden();
 }
 ```
 
-### Admin-level checks
+### 管理员级别检查
 ```php
 if (!$user->admin) {
     accessforbidden();
@@ -189,17 +189,17 @@ if (!$user->admin) {
 
 ---
 
-## Configuration / Constants
+## 配置与常量
 
-### Read a constant
+### 读取常量
 ```php
-// Constant stored in llx_const
-$value = getDolGlobalString('MYMODULE_MYKEY');       // returns string, '' if not set
-$value = getDolGlobalInt('MYMODULE_MYKEY');          // returns int, 0 if not set
-$enabled = isModEnabled('mymodule');                  // check module enabled
+// 存储在 llx_const 中的常量
+$value = getDolGlobalString('MYMODULE_MYKEY');       // 返回字符串，未设置时返回 ''
+$value = getDolGlobalInt('MYMODULE_MYKEY');          // 返回整数，未设置时返回 0
+$enabled = isModEnabled('mymodule');                  // 检查模块是否启用
 ```
 
-### Save a constant (in setup page)
+### 保存常量（在设置页面中）
 ```php
 dolibarr_set_const($db, 'MYMODULE_MYKEY', $value, 'chaine', 0, '', $conf->entity);
 dolibarr_del_const($db, 'MYMODULE_MYKEY', $conf->entity);
@@ -207,86 +207,86 @@ dolibarr_del_const($db, 'MYMODULE_MYKEY', $conf->entity);
 
 ---
 
-## Forms & UI Helpers
+## 表单与 UI 辅助函数
 
-### Form class
+### Form 类
 ```php
 $form = new Form($db);
 
-// Select list
+// 选择列表
 $form->select_thirdparty_list($selected_id, 'fk_soc', '', 1);
 
-// Date picker
+// 日期选择器
 $form->select_date($timestamp, 'mydate', 0, 0, 0, 'myform');
-// Then read back:
+// 然后读回：
 $mydate = dol_mktime(12, 0, 0,
     GETPOST('mydatemonth', 'int'),
     GETPOST('mydateday', 'int'),
     GETPOST('mydateyear', 'int')
 );
 
-// Status badge
-$badge = $object->getLibStatut(5); // 5=full label with badge HTML
+// 状态徽章
+$badge = $object->getLibStatut(5); // 5=带徽章 HTML 的完整标签
 ```
 
-### Page wrapper
+### 页面包装
 ```php
 $morejs  = array('/mymodule/js/mymodule.js');
 $morecss = array('/mymodule/css/mymodule.css.php');
 llxHeader('', $langs->trans('PageTitle'), '', '', '', '', $morejs, $morecss);
-// ... content ...
+// ... 内容 ...
 llxFooter();
 ```
 
 ---
 
-## Extrafields
+## 附加字段
 
-### Add an extrafield via code (usually done via UI or install)
-Managed in Setup → Display → Extrafields.
+### 通过代码添加附加字段（通常通过 UI 或安装完成）
+在 设置 → 显示 → 附加字段 中管理。
 
-### Read/write extrafield values
+### 读取/写入附加字段值
 ```php
-// After fetch(), extrafields are in $object->array_options
+// fetch() 之后，附加字段在 $object->array_options 中
 $val = $object->array_options['options_myfieldcode'];
 
-// Fetch extrafields for an object
+// 获取对象的附加字段
 $extrafields = new ExtraFields($db);
 $extrafields->fetch_name_optionals_label($object->table_element);
 $object->fetch_optionals();
 
-// Save extrafields
+// 保存附加字段
 $object->insertExtraFields();
 ```
 
 ---
 
-## URL & Path Helpers
+## URL 与路径辅助函数
 
 ```php
-// Absolute URL from relative path
-$url  = dol_buildpath('/mymodule/mypage.php', 1);   // 1=absolute URL
-$path = dol_buildpath('/mymodule/mypage.php', 0);   // 0=filesystem path
+// 从相对路径生成绝对 URL
+$url  = dol_buildpath('/mymodule/mypage.php', 1);   // 1=绝对 URL
+$path = dol_buildpath('/mymodule/mypage.php', 0);   // 0=文件系统路径
 
-// Image tag
+// 图片标签
 echo img_picto('Alt text', 'myicon@mymodule', 'class="pictofixedwidth"');
 
-// File path constants
-DOL_DOCUMENT_ROOT   // htdocs/ filesystem path
-DOL_URL_ROOT        // URL base (e.g. /dolibarr/htdocs)
-DOL_DATA_ROOT       // documents/ directory path
+// 文件路径常量
+DOL_DOCUMENT_ROOT   // htdocs/ 文件系统路径
+DOL_URL_ROOT        // URL 基础路径（如 /dolibarr/htdocs）
+DOL_DATA_ROOT       // documents/ 目录路径
 ```
 
 ---
 
-## Error Reporting
+## 错误报告
 
 ```php
-// In a class method
-$this->error  = 'Error message';          // single error
-$this->errors = array('err1', 'err2');    // multiple errors
+// 在类方法中
+$this->error  = 'Error message';          // 单个错误
+$this->errors = array('err1', 'err2');    // 多个错误
 
-// Display errors in page
+// 在页面中显示错误
 if (!empty($object->errors)) {
     setEventMessages(null, $object->errors, 'errors');
 }
@@ -296,32 +296,32 @@ setEventMessages($langs->trans('Warning'), null, 'warnings');
 
 ---
 
-## Cron / CLI Scripts
+## 定时任务 / CLI 脚本
 
-CLI scripts go in `mymodule/scripts/mymodule_cron.php`.
+CLI 脚本放在 `mymodule/scripts/mymodule_cron.php`。
 
 ```php
 #!/usr/bin/env php
 <?php
-// Load Dolibarr environment
+// 加载 Dolibarr 环境
 if (!defined('NOREQUIREUSER'))  define('NOREQUIREUSER', '1');
 if (!defined('NOREQUIREMENU'))  define('NOREQUIREMENU', '1');
 if (!defined('NOREQUIREHTML'))  define('NOREQUIREHTML', '1');
-// … find and include main.inc.php (same multi-path pattern as pages)
+// … 查找并包含 main.inc.php（与页面相同的多路径模式）
 
 /**
- * Function called by cron job
- * @return int 0=OK, <0=error
+ * 由定时任务调用的函数
+ * @return int 0=成功，<0=错误
  */
 function mymodule_cron_function()
 {
     global $db, $conf, $langs, $user;
-    // your logic
+    // 你的逻辑
     return 0;
 }
 ```
 
-Register in module descriptor:
+在模块描述符中注册：
 ```php
 $this->cronjobs = array(
     0 => array(
@@ -333,7 +333,7 @@ $this->cronjobs = array(
         'parameters' => '',
         'comment'   => 'Description',
         'frequency' => 1,
-        'unitfrequency' => 3600,  // seconds
+        'unitfrequency' => 3600,  // 秒
         'status'    => 0,
         'test'      => '$conf->mymodule->enabled',
     ),
@@ -342,34 +342,34 @@ $this->cronjobs = array(
 
 ---
 
-## Menus System
+## 菜单系统
 
-### Overview
+### 概述
 
-Dolibarr provides two complementary menu systems:
-1. **Top Menu** - horizontal navigation bar at the top of pages
-2. **Left Menu** - vertical sidebar navigation with collapsible categories
+Dolibarr 提供两个互补的菜单系统：
+1. **顶部菜单** - 页面顶部的水平导航栏
+2. **左侧菜单** - 带可折叠分类的垂直侧边栏导航
 
-Menus can be customized via:
-- The built-in Menu Editor (Home → Menus)
-- Custom menu manager classes (for complete menu replacement)
-- Module integration (adding items to existing menus)
+菜单可以通过以下方式自定义：
+- 内置的菜单编辑器（首页 → 菜单）
+- 自定义菜单管理类（用于完全替换菜单）
+- 模块集成（向现有菜单添加项）
 
-### Top Menu Declaration
+### 顶部菜单声明
 
-Top menus are typically defined in `core/menus/standard/` with a class implementing `MenuTop`:
+顶部菜单通常在 `core/menus/standard/` 中定义，使用一个实现 `MenuTop` 的类：
 
 ```php
 <?php
-// File: htdocs/core/menus/standard/mytopbar.php
+// 文件：htdocs/core/menus/standard/mytopbar.php
 
 class MenuTop
 {
-    public $atarget = '';  // '' or target attribute for links
+    public $atarget = '';  // '' 或链接的 target 属性
 
     public function __construct()
     {
-        // Initialize menu configuration
+        // 初始化菜单配置
     }
 
     public function showmenu()
@@ -378,19 +378,19 @@ class MenuTop
 
         print '<table class="tmenu"><tr class="tmenu">';
 
-        // Home menu item
+        // 首页菜单项
         print '<td class="tmenu"><a href="'.DOL_URL_ROOT.'/index.php?mainmenu=home" class="tmenusel">';
         print img_picto('', 'home').' '.$langs->trans("Home");
         print '</a></td>';
 
-        // Sales menu
+        // 销售菜单
         if ($user->hasRight('commande', 'lire')) {
             print '<td class="tmenu"><a href="'.DOL_URL_ROOT.'/commande/list.php?mainmenu=orders">';
             print img_picto('', 'order').' '.$langs->trans("Orders");
             print '</a></td>';
         }
 
-        // Products menu
+        // 产品菜单
         if ($user->hasRight('produit', 'lire')) {
             print '<td class="tmenu"><a href="'.DOL_URL_ROOT.'/product/list.php?mainmenu=products">';
             print img_picto('', 'product').' '.$langs->trans("Products");
@@ -403,13 +403,13 @@ class MenuTop
 ?>
 ```
 
-### Left Menu Declaration
+### 左侧菜单声明
 
-Left menus use the `Menu` class to build hierarchical navigation:
+左侧菜单使用 `Menu` 类来构建层级导航：
 
 ```php
 <?php
-// File: htdocs/core/menus/standard/myleftmenu.php
+// 文件：htdocs/core/menus/standard/myleftmenu.php
 
 class MenuLeft
 {
@@ -421,50 +421,50 @@ class MenuLeft
 
         $newmenu = new Menu();
 
-        // Main section: Setup
+        // 主分区：设置
         if ($user->admin) {
             $langs->load("admin");
             $newmenu->add(DOL_URL_ROOT."/admin/index.php?leftmenu=setup",
                 $langs->trans("Setup"), 0, 1);
 
-            // Subsection: Company Setup
+            // 子分区：公司设置
             $newmenu->add_submenu(DOL_URL_ROOT."/admin/company.php",
                 $langs->trans("MenuCompanySetup"), 1, 0);
 
-            // Subsection: Modules
+            // 子分区：模块
             $newmenu->add_submenu(DOL_URL_ROOT."/admin/modules.php",
                 $langs->trans("Modules"), 1, 0);
 
-            // Subsection: Permissions
+            // 子分区：权限
             $newmenu->add_submenu(DOL_URL_ROOT."/admin/perms.php",
                 $langs->trans("Security"), 1, 0);
         }
 
-        // Main section: Customers
+        // 主分区：客户
         if ($user->hasRight('societe', 'lire')) {
             $langs->load("companies");
             $newmenu->add(DOL_URL_ROOT."/societe/list.php?leftmenu=companies",
                 $langs->trans("Customers"), 0, 1);
 
-            // Subsection: List companies
+            // 子分区：公司列表
             $newmenu->add_submenu(DOL_URL_ROOT."/societe/list.php",
                 $langs->trans("List"), 1, 0);
 
-            // Subsection: New company
+            // 子分区：新建公司
             if ($user->hasRight('societe', 'creer')) {
                 $newmenu->add_submenu(DOL_URL_ROOT."/societe/card.php?action=create",
                     $langs->trans("NewCompany"), 1, 0);
             }
         }
 
-        // Store in menu_array
+        // 存入 menu_array
         $this->menu_array = $newmenu->liste;
 
-        // Render menu
+        // 渲染菜单
         for ($i = 0; $i < count($this->menu_array); $i++) {
             $item = $this->menu_array[$i];
             $level = $item['level'];
-            $padding = $level * 20;  // Indent by level
+            $padding = $level * 20;  // 按层级缩进
 
             if ($item['enabled']) {
                 print '<a class="vmenu'.($level > 0 ? 'sub' : '').'" '.
@@ -477,31 +477,31 @@ class MenuLeft
 ?>
 ```
 
-### Menu Entry Structure
+### 菜单项结构
 
-| Field | Type | Required | Description | Example |
+| 字段 | 类型 | 必填 | 描述 | 示例 |
 |-------|------|----------|-------------|---------|
-| `url` | string | Yes | Full URL or path to link | `/mymodule/list.php` |
-| `titre` | string | Yes | Menu item label (translatable) | `"My Module"` |
-| `level` | int | No | Hierarchy level (0=main, 1=sub, 2=nested) | `0` |
-| `enabled` | bool | No | Whether item is visible/clickable | `true` |
-| `target` | string | No | HTML target attribute | `_blank` |
-| `syslog_field` | string | No | Log field for tracking | `"entity"` |
+| `url` | string | 是 | 要链接的完整 URL 或路径 | `/mymodule/list.php` |
+| `titre` | string | 是 | 菜单项标签（可翻译） | `"My Module"` |
+| `level` | int | 否 | 层级（0=主，1=子，2=嵌套） | `0` |
+| `enabled` | bool | 否 | 菜单项是否可见/可点击 | `true` |
+| `target` | string | 否 | HTML target 属性 | `_blank` |
+| `syslog_field` | string | 否 | 用于追踪的日志字段 | `"entity"` |
 
-### Adding Menu Entries from a Module
+### 从模块添加菜单项
 
-In your module descriptor (`mymodule.php`):
+在你的模块描述符（`mymodule.php`）中：
 
 ```php
 <?php
-// Define menu entries to be added to existing menu system
+// 定义要添加到现有菜单系统的菜单项
 $this->menu = array();
 $r = 0;
 
-// Add to Sales menu
+// 添加到销售菜单
 $this->menu[$r++] = array(
-    "fk_menu"   => 'fk_mainmenu=orders',      // Parent: Orders
-    "type"      => 'left',                     // Left menu
+    "fk_menu"   => 'fk_mainmenu=orders',      // 父级：订单
+    "type"      => 'left',                     // 左侧菜单
     "titre"     => "MyModule Report",
     "mainmenu"  => 'orders',
     "leftmenu"  => 'mymodule',
@@ -511,19 +511,19 @@ $this->menu[$r++] = array(
     "enabled"   => '$conf->mymodule->enabled',
     "perms"     => '$user->hasRight(\'mymodule\', \'read\')',
     "target"    => '',
-    "user"      => 2,                          // 0=any, 1=logged-in, 2=admins only
+    "user"      => 2,                          // 0=任何人，1=已登录用户，2=仅管理员
 );
 
 ?>
 ```
 
-### Top Menu Forcing via Module
+### 通过模块强制顶部菜单
 
-Force your module's menu manager to be used:
+强制使用你模块的菜单管理器：
 
 ```php
 <?php
-// In module descriptor
+// 在模块描述符中
 $this->const = array(
     1 => array(
         'MAIN_MENU_STANDARD_FORCED',
@@ -558,54 +558,54 @@ $this->const = array(
 
 ---
 
-## Tabs System - Deep Guide
+## 标签页系统 - 深入指南
 
-### Understanding Tab Contexts
+### 理解标签页上下文
 
-Tab contexts identify which object type the tab belongs to. Each object has its own set of tabs:
+标签页上下文标识该标签页属于哪种对象类型。每种对象都有自己的一组标签页：
 
-| Object Type | Code | Class | prepare_head function | Typical URL |
+| 对象类型 | 代码 | 类 | prepare_head 函数 | 典型 URL |
 |-------------|------|-------|----------------------|-------------|
-| Thirdparty (Company/Supplier) | `thirdparty` | `Societe` | `societe_prepare_head()` | `societe/card.php` |
-| Invoice (Customer) | `invoice` | `Facture` | `facture_prepare_head()` | `compta/facture/card.php` |
-| Order (Customer) | `order` | `Commande` | `commande_prepare_head()` | `commande/card.php` |
-| Supplier Order | `supplier_order` | `CommandeFournisseur` | `fourn_commande_prepare_head()` | `fourn/commande/card.php` |
-| Supplier Invoice | `supplier_invoice` | `FactureFournisseur` | `fourn_facture_prepare_head()` | `fourn/facture/card.php` |
-| Proposal | `propal` | `Propal` | `propal_prepare_head()` | `comm/propal/card.php` |
-| Product | `product` | `Product` | `product_prepare_head()` | `product/card.php` |
-| Member | `member` | `Adherent` | `member_prepare_head()` | `adherents/card.php` |
-| Contract | `contract` | `Contrat` | `contract_prepare_head()` | `contrat/card.php` |
-| User | `user` | `User` | `user_prepare_head()` | `admin/user/card.php` |
-| Contact | `contact` | `Contact` | `contact_prepare_head()` | `contact/card.php` |
-| Intervention | `intervention` | `Intervention` | `intervention_prepare_head()` | `ficheinter/card.php` |
-| Category | `categories_0` to `categories_3` | `Categorie` | Category-specific | `categories/viewcat.php` |
-| Stock | `stock` | `Stock` | Stock-specific | `stock/stocktransfer.php` |
-| Group | `group` | `UserGroup` | Group-specific | `user/group/card.php` |
-| Ticket | `ticket` | `Ticket` | `ticket_prepare_head()` | `ticket/card.php` |
+| 第三方（公司/供应商） | `thirdparty` | `Societe` | `societe_prepare_head()` | `societe/card.php` |
+| 发票（客户） | `invoice` | `Facture` | `facture_prepare_head()` | `compta/facture/card.php` |
+| 订单（客户） | `order` | `Commande` | `commande_prepare_head()` | `commande/card.php` |
+| 供应商订单 | `supplier_order` | `CommandeFournisseur` | `fourn_commande_prepare_head()` | `fourn/commande/card.php` |
+| 供应商发票 | `supplier_invoice` | `FactureFournisseur` | `fourn_facture_prepare_head()` | `fourn/facture/card.php` |
+| 报价单 | `propal` | `Propal` | `propal_prepare_head()` | `comm/propal/card.php` |
+| 产品 | `product` | `Product` | `product_prepare_head()` | `product/card.php` |
+| 会员 | `member` | `Adherent` | `member_prepare_head()` | `adherents/card.php` |
+| 合同 | `contract` | `Contrat` | `contract_prepare_head()` | `contrat/card.php` |
+| 用户 | `user` | `User` | `user_prepare_head()` | `admin/user/card.php` |
+| 联系人 | `contact` | `Contact` | `contact_prepare_head()` | `contact/card.php` |
+| 干预 | `intervention` | `Intervention` | `intervention_prepare_head()` | `ficheinter/card.php` |
+| 分类 | `categories_0` 到 `categories_3` | `Categorie` | 分类特定 | `categories/viewcat.php` |
+| 库存 | `stock` | `Stock` | 库存特定 | `stock/stocktransfer.php` |
+| 用户组 | `group` | `UserGroup` | 用户组特定 | `user/group/card.php` |
+| 工单 | `ticket` | `Ticket` | `ticket_prepare_head()` | `ticket/card.php` |
 
-### Declaring Tabs in Module Descriptor
+### 在模块描述符中声明标签页
 
-Tabs are declared in `$this->tabs` array in your module descriptor:
+标签页在模块描述符的 `$this->tabs` 数组中声明：
 
 ```php
 <?php
-// File: mymodule/mymodule.php
+// 文件：mymodule/mymodule.php
 
 class mymodule
 {
     public function __construct()
     {
         $this->tabs = array(
-            // Add new tab to customer invoices
+            // 向客户发票添加新标签页
             'invoice:+mytab:MyTabTitle:@mymodule:$user->hasRight(\'mymodule\', \'read\'):/mymodule/invoice_tab.php?id=__ID__',
 
-            // Add tab to products with no permission check
+            // 向产品添加标签页，无权限检查
             'product:+products_report:ProductReport:@mymodule:/mymodule/product_report.php?id=__ID__',
 
-            // Remove default tab from invoices
+            // 从发票中移除默认标签页
             'invoice:-notes',
 
-            // Add multiple tabs to orders
+            // 向订单添加多个标签页
             'order:+mytab1:Tab One:@mymodule:/mymodule/order_tab1.php?id=__ID__',
             'order:+mytab2:Tab Two:@mymodule:$user->admin:/mymodule/order_tab2.php?id=__ID__',
         );
@@ -614,51 +614,51 @@ class mymodule
 ?>
 ```
 
-### Tab Declaration Format
+### 标签页声明格式
 
-Each tab declaration is a string with the following structure:
+每个标签页声明都是一个具有以下结构的字符串：
 
 ```
 objecttype:±tabcode:TabTitle:@modulename[:$permission]:/path/to/tab.php?id=__ID__
 ```
 
-| Component | Type | Required | Description | Example |
+| 组成部分 | 类型 | 必填 | 描述 | 示例 |
 |-----------|------|----------|-------------|---------|
-| `objecttype` | string | Yes | Object context code | `invoice` |
-| `±tabcode` | string | Yes | `+` (add) or `-` (remove) prefix + unique ID | `+mytab` |
-| `TabTitle` | string | Yes (for add) | Translatable tab title | `MyTabTitle` |
-| `@modulename` | string | Yes (for add) | Language file module | `@mymodule` |
-| `$permission` | PHP expr | No | Permission check expression | `$user->hasRight('mymodule', 'read')` |
-| `url` | string | Yes (for add) | Full page path with ID placeholder | `/mymodule/page.php?id=__ID__` |
+| `objecttype` | string | 是 | 对象上下文代码 | `invoice` |
+| `±tabcode` | string | 是 | `+`（添加）或 `-`（移除）前缀 + 唯一 ID | `+mytab` |
+| `TabTitle` | string | 是（添加时） | 可翻译的标签页标题 | `MyTabTitle` |
+| `@modulename` | string | 是（添加时） | 语言文件模块 | `@mymodule` |
+| `$permission` | PHP 表达式 | 否 | 权限检查表达式 | `$user->hasRight('mymodule', 'read')` |
+| `url` | string | 是（添加时） | 带 ID 占位符的完整页面路径 | `/mymodule/page.php?id=__ID__` |
 
-### Permission Expressions
+### 权限表达式
 
-Common permission patterns:
+常见权限模式：
 
 ```php
-// Check module permission
+// 检查模块权限
 $user->hasRight('mymodule', 'read')
 $user->hasRight('mymodule', 'create')
 $user->hasRight('mymodule', 'delete')
 
-// Check global permissions
+// 检查全局权限
 $user->admin
 $user->hasRight('societe', 'lire')
 $user->hasRight('produit', 'creer')
 
-// Complex expressions
+// 复杂表达式
 ($user->hasRight('mymodule', 'read') && $conf->mymodule->enabled)
 ($user->admin || $user->hasRight('mymodule', 'write'))
 isModEnabled('mymodule')
 ```
 
-### Implementing a Tab Page
+### 实现标签页页面
 
-Your tab page receives the object ID via query parameter:
+你的标签页页面通过查询参数接收对象 ID：
 
 ```php
 <?php
-// File: mymodule/mymodule_tab.php
+// 文件：mymodule/mymodule_tab.php
 
 $res = 0;
 if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
@@ -671,19 +671,19 @@ if (!$res) {
     die("Include of main fails");
 }
 
-// Load required classes and libs
+// 加载所需的类和库
 require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/invoice.lib.php';
 
-// Check permissions
+// 检查权限
 if (!$user->hasRight('mymodule', 'read')) {
     accessforbidden();
 }
 
-// Get object ID from URL
+// 从 URL 获取对象 ID
 $id = GETPOST('id', 'int');
 
-// Load the invoice object
+// 加载发票对象
 $invoice = new Facture($db);
 $result = $invoice->fetch($id);
 if ($result <= 0) {
@@ -691,11 +691,11 @@ if ($result <= 0) {
     exit;
 }
 
-// Get tab list and render tabs
+// 获取标签页列表并渲染标签页
 $head = facture_prepare_head($invoice);
 dol_fiche_head($head, 'mytab', $langs->trans('Invoice'), -1, 'bill');
 
-// Your custom tab content
+// 你的自定义标签页内容
 echo '<table class="noborder fullwidth">';
 echo '<tr class="liste_titre">';
 echo '<td>'.$langs->trans('MyField').'</td>';
@@ -711,26 +711,26 @@ llxFooter();
 ?>
 ```
 
-### Displaying Tabs in Your Own Pages
+### 在你自己的页面中显示标签页
 
-To show standard tabs in a custom page:
+在自定义页面中显示标准标签页：
 
 ```php
 <?php
-// Load the object and its lib
+// 加载对象及其库
 require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/order.lib.php';
 
 $order = new Commande($db);
 $order->fetch($id);
 
-// Get tab list from prepare_head function
+// 从 prepare_head 函数获取标签页列表
 $head = commande_prepare_head($order);
 
-// Render tabs
+// 渲染标签页
 dol_fiche_head($head, 'mytabcode', $langs->trans('Order'), -1, 'order');
 
-// Your page content here
+// 你的页面内容放在这里
 
 dol_fiche_end();
 ?>
@@ -738,11 +738,11 @@ dol_fiche_end();
 
 ---
 
-## Permissions System - Deep Guide
+## 权限系统 - 深入指南
 
-### Permission Architecture
+### 权限架构
 
-Dolibarr's permission system is hierarchical:
+Dolibarr 的权限系统是分层的：
 
 ```
 User/Group
@@ -752,56 +752,56 @@ User/Group
                             └── Linked via llx_user_rights or llx_usergroup_rights
 ```
 
-### Permission Levels
+### 权限级别
 
-Permissions are organized in two levels:
+权限分为两个级别：
 
-| Level | Type | Purpose | Example |
+| 级别 | 类型 | 用途 | 示例 |
 |-------|------|---------|---------|
-| Level 1 | Feature area | Main functionality group | `societe` (Thirdparty), `commande` (Orders) |
-| Level 2 | Operation | Specific action within level 1 | `lire` (read), `creer` (create), `modifier` (modify), `supprimer` (delete) |
+| 级别 1 | 功能区域 | 主功能分组 | `societe`（第三方）、`commande`（订单） |
+| 级别 2 | 操作 | 级别 1 内的具体操作 | `lire`（读取）、`creer`（创建）、`modifier`（修改）、`supprimer`（删除） |
 
-### Declaring Permissions in Module
+### 在模块中声明权限
 
-In your module descriptor:
+在你的模块描述符中：
 
 ```php
 <?php
-// File: mymodule/mymodule.php
+// 文件：mymodule/mymodule.php
 
 class mymodule
 {
     public function __construct()
     {
-        // Define all permissions your module uses
+        // 定义模块使用的所有权限
         $this->rights = array();
         $r = 0;
 
-        // Permission: Read
-        $this->rights[$r][0] = $this->numero.sprintf("%02d", $r+1);  // ID like 50601
+        // 权限：读取
+        $this->rights[$r][0] = $this->numero.sprintf("%02d", $r+1);  // ID 形如 50601
         $this->rights[$r][1] = 'Read documents';
-        $this->rights[$r][4] = 'lire';                               // Level 2 code
+        $this->rights[$r][4] = 'lire';                               // 级别 2 代码
         $r++;
 
-        // Permission: Create
+        // 权限：创建
         $this->rights[$r][0] = $this->numero.sprintf("%02d", $r+1);
         $this->rights[$r][1] = 'Create documents';
         $this->rights[$r][4] = 'creer';
         $r++;
 
-        // Permission: Modify
+        // 权限：修改
         $this->rights[$r][0] = $this->numero.sprintf("%02d", $r+1);
         $this->rights[$r][1] = 'Modify documents';
         $this->rights[$r][4] = 'modifier';
         $r++;
 
-        // Permission: Delete
+        // 权限：删除
         $this->rights[$r][0] = $this->numero.sprintf("%02d", $r+1);
         $this->rights[$r][1] = 'Delete documents';
         $this->rights[$r][4] = 'supprimer';
         $r++;
 
-        // Permission: Export
+        // 权限：导出
         $this->rights[$r][0] = $this->numero.sprintf("%02d", $r+1);
         $this->rights[$r][1] = 'Export documents';
         $this->rights[$r][4] = 'export';
@@ -811,48 +811,48 @@ class mymodule
 ?>
 ```
 
-### Permission Declaration Fields
+### 权限声明字段
 
-| Index | Field | Type | Required | Description | Example |
+| 索引 | 字段 | 类型 | 必填 | 描述 | 示例 |
 |-------|-------|------|----------|-------------|---------|
-| [0] | ID | string | Yes | Unique permission identifier (module_num + 2-digit counter) | `50601` |
-| [1] | Label | string | Yes | Human-readable permission description | `Read documents` |
-| [2] | (Reserved) | - | No | Not used in current versions | - |
-| [3] | (Reserved) | - | No | Not used in current versions | - |
-| [4] | Level 2 Code | string | Yes | Operation code used in permission checks | `lire` |
-| [5] | Level 1 Code | string | No | Feature area (defaults to module name) | `mymodule` |
+| [0] | ID | string | 是 | 唯一权限标识符（module_num + 两位计数器） | `50601` |
+| [1] | 标签 | string | 是 | 人类可读的权限描述 | `Read documents` |
+| [2] |（保留） | - | 否 | 当前版本未使用 | - |
+| [3] |（保留） | - | 否 | 当前版本未使用 | - |
+| [4] | 级别 2 代码 | string | 是 | 权限检查中使用的操作代码 | `lire` |
+| [5] | 级别 1 代码 | string | 否 | 功能区域（默认为模块名） | `mymodule` |
 
-### Checking Permissions in Pages
+### 在页面中检查权限
 
-Common permission checks:
+常见权限检查：
 
 ```php
 <?php
-// Check read permission
+// 检查读取权限
 if (!$user->hasRight('mymodule', 'lire')) {
     accessforbidden();
 }
 
-// Check create permission
+// 检查创建权限
 if (!$user->hasRight('mymodule', 'creer')) {
     dol_print_error($langs->trans('NotAllowed'));
     exit;
 }
 
-// Check multiple conditions
+// 检查多个条件
 if (!($user->hasRight('mymodule', 'modifier') && isModEnabled('mymodule'))) {
     accessforbidden();
 }
 
-// Admin-only page
+// 仅管理员页面
 if (!$user->admin) {
     accessforbidden();
 }
 
-// Complex permission logic
+// 复杂权限逻辑
 $allowed = false;
 if ($user->hasRight('mymodule', 'read')) {
-    if ($user->id == $object->fk_user_author || $user->admin) {
+    if ($user->id == $object->fk_user_creat || $user->admin) {
         $allowed = true;
     }
 }
@@ -862,76 +862,76 @@ if (!$allowed) {
 ?>
 ```
 
-### Reading User Permissions
+### 读取用户权限
 
-Access user permissions via the global `$user` object:
+通过全局 `$user` 对象访问用户权限：
 
 ```php
 <?php
-// Access permission
+// 访问权限
 if ($user->rights->mymodule->lire) {
-    // User has read permission
+    // 用户具有读取权限
 }
 
-// Access nested permission structure
+// 访问嵌套权限结构
 $hasPermission = isset($user->rights->mymodule->creer) 
     && $user->rights->mymodule->creer;
 
-// Get all rights for a user
-$all_rights = $user->rights;  // Array of all permissions
+// 获取用户的所有权限
+$all_rights = $user->rights;  // 所有权限的数组
 
-// Check if user belongs to admin group
+// 检查用户是否属于管理员组
 if ($user->admin) {
-    // Admin has all permissions
+    // 管理员具有所有权限
 }
 ?>
 ```
 
-### Permission Naming Conventions
+### 权限命名约定
 
-Standard level 2 codes (use consistently):
+标准级别 2 代码（统一使用）：
 
-| Code | Meaning | Use For |
+| 代码 | 含义 | 用途 |
 |------|---------|---------|
-| `lire` | Read/View | Display, view, export, report operations |
-| `creer` | Create | Insert new records |
-| `modifier` | Modify | Update existing records |
-| `supprimer` | Delete | Remove records |
-| `export` | Export | Export to file formats |
-| `importer` | Import | Import from files |
-| `valider` | Validate | Approve/validate workflow steps |
-| `publier` | Publish | Make public/visible |
-| `admin` | Administration | Module configuration and setup |
+| `lire` | 读取/查看 | 显示、查看、导出、报表操作 |
+| `creer` | 创建 | 插入新记录 |
+| `modifier` | 修改 | 更新现有记录 |
+| `supprimer` | 删除 | 移除记录 |
+| `export` | 导出 | 导出为文件格式 |
+| `importer` | 导入 | 从文件导入 |
+| `valider` | 验证 | 审批/验证工作流步骤 |
+| `publier` | 发布 | 设为公开/可见 |
+| `admin` | 管理 | 模块配置与设置 |
 
 ---
 
-## Extrafields System - Deep Guide
+## 附加字段系统 - 深入指南
 
-### Overview
+### 概述
 
-Extrafields (also called optional fields or custom fields) allow adding custom attributes to standard Dolibarr objects without modifying core database schema.
+附加字段（也称为可选字段或自定义字段）允许为标准的 Dolibarr 对象添加自定义属性，而无需修改核心数据库架构。
 
-Supported objects:
-- Thirdparty (Societe)
-- Contact (Contact/Socpeople)
-- Invoice (Facture)
-- Order (Commande)
-- Supplier Invoice (FactureFournisseur)
-- Supplier Order (CommandeFournisseur)
-- Product/Service (Product)
-- Member (Adherent)
-- Member Type (Adherent_Type)
-- User
-- Project
-- Project Task
-- Proposal (Propal)
-- Expense Report (Expensereport)
-- Events/Intervention
-- Categories (for each category type)
+支持的对象：
+- 第三方（Societe）
+- 联系人（Contact/Socpeople）
+- 发票（Facture）
+- 订单（Commande）
+- 供应商发票（FactureFournisseur）
+- 供应商订单（CommandeFournisseur）
+- 产品/服务（Product）
+- 会员（Adherent）
+- 会员类型（Adherent_Type）
+- 用户
+- 项目
+- 项目任务
+- 报价单（Propal）
+- 费用报销单（Expensereport）
+- 事件/干预
+- 分类（每种分类类型）
 
-### Extrafield Table Structure
+### 附加字段表结构
 
-Each object type has a corresponding extrafields table:
+每种对象类型都有一个对应的附加字段表：
 
 ```sql
 CREATE TABLE IF NOT EXISTS llx_mymodule_object_extrafields (
@@ -940,42 +940,42 @@ CREATE TABLE IF NOT EXISTS llx_mymodule_object_extrafields (
     fk_object               INTEGER NOT NULL,
     import_key              VARCHAR(14),
     UNIQUE INDEX uk_extrafield_import_key (fk_object, import_key),
-    -- Your custom fields go here:
+    -- 你的自定义字段放在这里：
     options_customfield1    VARCHAR(255),
     options_customfield2    TEXT,
     options_customfield3    DECIMAL(10, 2)
 ) ENGINE=InnoDB;
 ```
 
-### Creating Extrafields via Code
+### 通过代码创建附加字段
 
-Programmatically create extrafields in module install:
+在模块安装时以编程方式创建附加字段：
 
 ```php
 <?php
-// File: mymodule/admin/setup.php or in module descriptor hooks
+// 文件：mymodule/admin/setup.php 或模块描述符钩子中
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 
 $extrafields = new ExtraFields($db);
 
-// Add a text extrafield to invoices
+// 向发票添加文本附加字段
 $result = $extrafields->addExtraField(
-    'myfield1',                    // Field code (will become options_myfield1)
-    'My Text Field',               // Field label (translatable)
-    'varchar',                     // Field type: varchar, int, double, text, date, datetime
-    10,                            // Field position (order)
-    255,                           // Field size for varchar
-    'facture',                     // Object type (table_element value)
-    false,                         // Mandatory
-    false,                         // Read-only
-    null,                          // Default value
-    '',                            // Params JSON
-    0,                             // Visibility
-    'mymodule'                     // Module name
+    'myfield1',                    // 字段代码（将变成 options_myfield1）
+    'My Text Field',               // 字段标签（可翻译）
+    'varchar',                     // 字段类型：varchar、int、double、text、date、datetime
+    10,                            // 字段位置（顺序）
+    255,                           // varchar 的字段大小
+    'facture',                     // 对象类型（table_element 值）
+    false,                         // 必填
+    false,                         // 只读
+    null,                          // 默认值
+    '',                            // 参数 JSON
+    0,                             // 可见性
+    'mymodule'                     // 模块名
 );
 
-// Add a select extrafield to orders
+// 向订单添加下拉选择附加字段
 $result = $extrafields->addExtraField(
     'status_type',
     'Order Status Type',
@@ -991,7 +991,7 @@ $result = $extrafields->addExtraField(
     'mymodule'
 );
 
-// Add a date extrafield to products
+// 向产品添加日期附加字段
 $result = $extrafields->addExtraField(
     'review_date',
     'Product Review Date',
@@ -1007,7 +1007,7 @@ $result = $extrafields->addExtraField(
     'mymodule'
 );
 
-// Add a double (decimal) extrafield
+// 添加 double（十进制）附加字段
 $result = $extrafields->addExtraField(
     'weight_kg',
     'Weight (kg)',
@@ -1029,47 +1029,47 @@ if ($result < 0) {
 ?>
 ```
 
-### Extrafield Types
+### 附加字段类型
 
-| Type | PHP Type | Size Param | Use Case | Example |
+| 类型 | PHP 类型 | 大小参数 | 使用场景 | 示例 |
 |------|----------|-----------|----------|---------|
-| `varchar` | String | Max length | Short text values | Name, code, reference |
-| `text` | String | Ignored | Long text values | Description, notes |
-| `int` | Integer | Ignored | Whole numbers | Quantity, count, ID |
-| `double` | Float | Ignored | Decimal numbers | Price, weight, percentage |
-| `date` | Date (YYYYMMDD) | Ignored | Date values | Birth date, review date |
-| `datetime` | DateTime | Ignored | Date + time | Created date, modified time |
-| `select` | String | Ignored | Dropdown list | Status, type, category |
-| `radio` | String | Ignored | Radio buttons | Yes/No, single choice |
-| `checkbox` | String (CSV) | Ignored | Multiple checkboxes | Interests, features |
-| `link` | String (JSON) | Ignored | Object link | Related invoice, product |
+| `varchar` | 字符串 | 最大长度 | 短文本值 | 名称、代码、编号 |
+| `text` | 字符串 | 忽略 | 长文本值 | 描述、备注 |
+| `int` | 整数 | 忽略 | 整数 | 数量、计数、ID |
+| `double` | 浮点数 | 忽略 | 十进制数 | 价格、重量、百分比 |
+| `date` | 日期 (YYYYMMDD) | 忽略 | 日期值 | 出生日期、审核日期 |
+| `datetime` | 日期时间 | 忽略 | 日期 + 时间 | 创建日期、修改时间 |
+| `select` | 字符串 | 忽略 | 下拉列表 | 状态、类型、分类 |
+| `radio` | 字符串 | 忽略 | 单选按钮 | 是/否、单选 |
+| `checkbox` | 字符串 (CSV) | 忽略 | 多选框 | 兴趣、特性 |
+| `link` | 字符串 (JSON) | 忽略 | 对象链接 | 关联发票、产品 |
 
-### Reading Extrafields
+### 读取附加字段
 
-Load extrafield values from an object:
+从对象加载附加字段值：
 
 ```php
 <?php
-// After loading an object (e.g., invoice)
+// 加载对象之后（例如发票）
 $invoice = new Facture($db);
 $invoice->fetch($id);
 
-// Load extrafield definitions
+// 加载附加字段定义
 $extrafields = new ExtraFields($db);
 $extrafields->fetch_name_optionals_label($invoice->table_element);
 
-// Load extrafield values into object
+// 将附加字段值加载到对象中
 $invoice->fetch_optionals();
 
-// Access extrafield values
+// 访问附加字段值
 if (isset($invoice->array_options['options_myfield1'])) {
     $value = $invoice->array_options['options_myfield1'];
     echo "My field value: ".$value;
 }
 
-// Check if extrafield exists
+// 检查附加字段是否存在
 if (!empty($extrafields->attribute_label)) {
-    // Extrafields are available
+    // 附加字段可用
     foreach ($extrafields->attribute_label as $code => $label) {
         echo "Field: ".$code." = ".$invoice->array_options['options_'.$code];
     }
@@ -1077,31 +1077,31 @@ if (!empty($extrafields->attribute_label)) {
 ?>
 ```
 
-### Writing Extrafields
+### 写入附加字段
 
-Save extrafield values:
+保存附加字段值：
 
 ```php
 <?php
-// In an edit page, after POST form submission
+// 在编辑页面中，POST 表单提交之后
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 
 $extrafields = new ExtraFields($db);
 $extrafields->fetch_name_optionals_label('facture');
 
-// Create/load object
+// 创建/加载对象
 $invoice = new Facture($db);
 $invoice->fetch($id);
 
-// Set extrafield values from POST
+// 从 POST 设置附加字段值
 $ret = $extrafields->setOptionalsFromPost(
-    null,        // extralabels (if null, will be loaded)
-    $invoice,    // The object
-    'CREATE'     // Action (CREATE or UPDATE)
+    null,        // 附加标签（如果为 null，将被加载）
+    $invoice,    // 对象
+    'CREATE'     // 操作（CREATE 或 UPDATE）
 );
 
-// Insert/update object
+// 插入/更新对象
 $result = $invoice->update($user);
 if ($result >= 0) {
     setEventMessages($langs->trans('RecordSaved'), null, 'mesgs');
@@ -1111,16 +1111,16 @@ if ($result >= 0) {
 ?>
 ```
 
-### Displaying Extrafields in Forms
+### 在表单中显示附加字段
 
-In edit pages, render extrafield inputs:
+在编辑页面中，渲染附加字段输入框：
 
 ```php
 <?php
-// Initialize hooks
+// 初始化钩子
 $hookmanager->initHooks(array('invoiceedit'));
 
-// In your form edit section
+// 在你的表单编辑区域中
 $parameters = array('id' => $invoice->id);
 $reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $invoice, $action);
 
@@ -1130,37 +1130,37 @@ if (empty($reshook) && !empty($extrafields->attribute_label)) {
 ?>
 ```
 
-### Displaying Extrafields in Views
+### 在视图中显示附加字段
 
-In view/detail pages, display extrafield values:
+在查看/详情页面中，显示附加字段值：
 
 ```php
 <?php
-// Initialize hooks
+// 初始化钩子
 $hookmanager->initHooks(array('invoiceview'));
 
-// Display extrafields in view mode
+// 以查看模式显示附加字段
 $parameters = array('id' => $invoice->id);
 $reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $invoice, $action);
 
 if (empty($reshook) && !empty($extrafields->attribute_label)) {
-    print $invoice->showOptionals($extrafields);  // No 'edit' parameter = view mode
+    print $invoice->showOptionals($extrafields);  // 无 'edit' 参数 = 查看模式
 }
 ?>
 ```
 
-### Integrating Extrafields in Object Classes
+### 在对象类中集成附加字段
 
-Add extrafield handling to your custom object class:
+为你的自定义对象类添加附加字段处理：
 
 ```php
 <?php
-// In your class fetch() method
+// 在你的类 fetch() 方法中
 public function fetch($id)
 {
-    // ... existing fetch code ...
+    // ... 现有的 fetch 代码 ...
 
-    // Load extrafields
+    // 加载附加字段
     require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
     $extrafields = new ExtraFields($this->db);
     $extralabels = $extrafields->fetch_name_optionals_label($this->table_element, true);
@@ -1172,12 +1172,12 @@ public function fetch($id)
     return 1;
 }
 
-// In your class create() method (after INSERT)
+// 在你的类 create() 方法中（INSERT 之后）
 public function create(User $user, $notrigger = 0)
 {
-    // ... existing create code ...
+    // ... 现有的 create 代码 ...
 
-    // Handle extrafields
+    // 处理附加字段
     if (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) {
         $result = $this->insertExtraFields();
         if ($result < 0) {
@@ -1189,12 +1189,12 @@ public function create(User $user, $notrigger = 0)
     return $this->id;
 }
 
-// In your class update() method (after UPDATE)
+// 在你的类 update() 方法中（UPDATE 之后）
 public function update(User $user, $notrigger = 0)
 {
-    // ... existing update code ...
+    // ... 现有的 update 代码 ...
 
-    // Handle extrafields
+    // 处理附加字段
     $hookmanager->initHooks(array('myobjectdao'));
     $parameters = array('id' => $this->id);
     $reshook = $hookmanager->executeHooks('insertExtraFields', $parameters, $this, 'update');
@@ -1212,12 +1212,12 @@ public function update(User $user, $notrigger = 0)
     return 1;
 }
 
-// In your class delete() method (after DELETE)
+// 在你的类 delete() 方法中（DELETE 之后）
 public function delete(User $user, $notrigger = 0)
 {
-    // ... existing delete code ...
+    // ... 现有的 delete 代码 ...
 
-    // Clean up extrafields
+    // 清理附加字段
     if (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) {
         $result = $this->deleteExtraFields();
         if ($result < 0) {
@@ -1230,20 +1230,20 @@ public function delete(User $user, $notrigger = 0)
 ?>
 ```
 
-### Displaying Extrafields in PDF Output
+### 在 PDF 输出中显示附加字段
 
-Include extrafield values in generated PDFs:
+在生成的 PDF 中包含附加字段值：
 
 ```php
 <?php
-// In your PDF generation class (like PDF_Facture)
+// 在你的 PDF 生成类中（如 PDF_Facture）
 
-// Fetch extrafields and values
+// 获取附加字段和值
 $extrafields = new ExtraFields($this->db);
 $extrafields->fetch_name_optionals_label('facture');
 $object->fetch_optionals();
 
-// In PDF generation method
+// 在 PDF 生成方法中
 if (!empty($extrafields->attribute_label)) {
     foreach ($extrafields->attribute_label as $code => $label) {
         $value = isset($object->array_options['options_'.$code]) 
@@ -1263,12 +1263,12 @@ if (!empty($extrafields->attribute_label)) {
 
 ---
 
-## REST API Integration
+## REST API 集成
 
-Dolibarr exposes REST API. Add your own API endpoint:
+Dolibarr 公开 REST API。添加你自己的 API 端点：
 
-File: `mymodule/class/api_mymodule.class.php`
-Extends: `DolibarrApi`
+文件：`mymodule/class/api_mymodule.class.php`
+继承：`DolibarrApi`
 
-Enable via Setup → API.
-Docs: https://wiki.dolibarr.org/index.php/Module_Web_Services_API_REST_(developer)
+通过 设置 → API 启用。
+文档：https://wiki.dolibarr.org/index.php/Module_Web_Services_API_REST_(developer)

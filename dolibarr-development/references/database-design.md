@@ -1,123 +1,123 @@
-# Database Design Guide for Dolibarr Modules
+# Dolibarr 模块数据库设计指南
 
-## Overview
+## 概述
 
-This guide provides comprehensive patterns, conventions, and best practices for designing database schemas in Dolibarr. All Dolibarr tables follow strict naming conventions and structural patterns to ensure consistency, portability, and performance across MySQL, MariaDB, and PostgreSQL databases.
+本指南为 Dolibarr 中的数据库架构设计提供了全面的模式、约定和最佳实践。所有 Dolibarr 数据表都遵循严格的命名约定和结构模式，以确保在 MySQL、MariaDB 和 PostgreSQL 数据库之间的一致性、可移植性和性能。
 
-## Standard Table Structure (标准表结构)
+## 标准表结构
 
-### Required Fields
+### 必填字段
 
-Every Dolibarr table should include these fundamental fields:
+每个 Dolibarr 数据表都应包含以下基础字段：
 
 ```sql
--- Primary key: technical identifier
+-- 主键：技术标识符
 rowid INTEGER AUTO_INCREMENT PRIMARY KEY
 
--- Multi-company support
+-- 多公司支持
 entity INTEGER DEFAULT 1 NOT NULL
 
--- Reference number (human-readable ID)
+-- 编号（人类可读的 ID）
 ref VARCHAR(30) NOT NULL
 
--- Timestamps
-datec DATETIME NOT NULL          -- creation datetime (set once, never modified)
-tms TIMESTAMP                    -- last modification timestamp (auto-updated by DB)
+-- 时间戳
+date_creation DATETIME NOT NULL          -- 创建日期时间（只设置一次，从不修改）
+tms TIMESTAMP                    -- 最后修改时间戳（由数据库自动更新）
 
--- User tracking (optional but recommended)
-fk_user_author INTEGER NOT NULL  -- user creating record (FK to llx_user.rowid)
-fk_user_modif INTEGER           -- user last modifying record (FK to llx_user.rowid)
+-- 用户追踪（可选但推荐）
+fk_user_creat INTEGER NOT NULL  -- 创建记录的用户（外键指向 llx_user.rowid）
+fk_user_modif INTEGER           -- 最后修改记录的用户（外键指向 llx_user.rowid）
 
--- Status field
-status SMALLINT DEFAULT 0        -- record status (validated, draft, archived…)
+-- 状态字段
+status SMALLINT DEFAULT 0        -- 记录状态（已验证、草稿、已归档…）
 
--- Import metadata
-import_key VARCHAR(32)           -- import batch ID (YYYYMMDDHHMMSS format)
+-- 导入元数据
+import_key VARCHAR(14)           -- 导入批次 ID（YYYYMMDDHHMMSS 格式）
 ```
 
-### Optional Fields
+### 可选字段
 
-Add as needed for specific business requirements:
+根据特定业务需求按需添加：
 
 ```sql
--- Validation tracking
-date_valid DATETIME              -- when record was validated
-fk_user_valid INTEGER           -- user who validated record
+-- 验证追踪
+date_valid DATETIME              -- 记录验证的时间
+fk_user_valid INTEGER           -- 验证记录的用户
 
--- Third-party reference
-fk_soc INTEGER                  -- FK to llx_societe (customer/supplier)
+-- 第三方引用
+fk_soc INTEGER                  -- 外键指向 llx_societe（客户/供应商）
 
--- Notes
-note_private TEXT               -- private comment (not visible to external users)
-note_public TEXT                -- public comment (visible to third parties)
+-- 备注
+note_private TEXT               -- 私有备注（外部用户不可见）
+note_public TEXT                -- 公开备注（第三方可见）
 
--- External system reference
-ref_ext VARCHAR(255)            -- reference in external system
+-- 外部系统引用
+ref_ext VARCHAR(255)            -- 外部系统中的编号
 
--- Additional metadata
-import_date DATETIME            -- when record was imported
+-- 其他元数据
+import_date DATETIME            -- 记录导入的时间
 ```
 
-## Field Type Selection (字段类型选择)
+## 字段类型选择
 
-Use these types consistently across all modules for better portability and accuracy:
+为获得更好的可移植性和准确性，请在所有模块中统一使用这些类型：
 
-| Purpose | Type | Example | Notes |
+| 用途 | 类型 | 示例 | 说明 |
 |---------|------|---------|-------|
-| Primary key, foreign key | INTEGER | rowid, fk_user | Use BIGINT for very large tables (>100M rows) |
-| Small integers (status, count) | SMALLINT | status=0/1/2, quantity_units | Range: -32768 to 32767 |
-| Money amounts | DOUBLE(24,8) | unit_price, total_amount | Precision for all currencies |
-| Percentages, rates | DOUBLE(6,3) | vat_rate, discount_pct | 3 decimal places |
-| Quantities, measurements | REAL | qty, weight | Floating point for technical measurements |
-| Short text | VARCHAR(N) | name, code, email | Indexed for search, max 255 chars |
-| Long text | TEXT or MEDIUMTEXT | description, notes | No indexing, for large content |
-| Dates only | DATE | birth_date, deadline_date | No time component |
-| Date + time | DATETIME | datec, validation_date | User-supplied, timezone-aware via PHP |
-| Auto-timestamps | TIMESTAMP | tms | Auto-managed by database |
-| Boolean | SMALLINT | is_active=0/1 | Use 0/1, never ENUM or boolean |
+| 主键、外键 | INTEGER | rowid, fk_user | 对非常大的表（>1 亿行）使用 BIGINT |
+| 小整数（状态、计数） | SMALLINT | status=0/1/2, quantity_units | 范围：-32768 到 32767 |
+| 金额 | DOUBLE(24,8) | unit_price, total_amount | 对所有货币保持精度 |
+| 百分比、比率 | DOUBLE(6,3) | vat_rate, discount_pct | 3 位小数 |
+| 数量、测量值 | REAL | qty, weight | 技术测量用的浮点数 |
+| 短文本 | VARCHAR(N) | name, code, email | 可索引用于搜索，最长 255 字符 |
+| 长文本 | TEXT 或 MEDIUMTEXT | description, notes | 不索引，用于大内容 |
+| 仅日期 | DATE | birth_date, deadline_date | 无时间部分 |
+| 日期 + 时间 | DATETIME | date_creation, validation_date | 用户提供，通过 PHP 感知时区 |
+| 自动时间戳 | TIMESTAMP | tms | 由数据库自动管理 |
+| 布尔 | SMALLINT | is_active=0/1 | 使用 0/1，绝不用 ENUM 或布尔 |
 
-**Important**: Never use ENUM types. Business rules must live in PHP code, not in the database schema.
+**重要**：绝不使用 ENUM 类型。业务规则必须存在于 PHP 代码中，而不是数据库架构中。
 
-## Naming Conventions (命名规范)
+## 命名规范
 
-### Table Names
+### 表名
 
-- **Prefix**: all tables with `llx_` (mandatory)
-- **Format**: lowercase with underscore separators
-- **Example**: `llx_mymodule_order`, `llx_mymodule_order_line`
+- **前缀**：所有表都以 `llx_` 开头（强制）
+- **格式**：小写字母，下划线分隔
+- **示例**：`llx_mymodule_order`、`llx_mymodule_order_line`
 
-### Field Names
+### 字段名
 
-- **Foreign keys**: `fk_[referencing_table]_[field_name]`
-  - Example: `fk_mymodule_invoice_fk_soc` (foreign key in mymodule_invoice table, references soc.rowid)
+- **外键字段**：`fk_<target>`（短格式）— 例如 `fk_soc`、`fk_user_creat`、`fk_order`
+  - 注意：Dolibarr **只使用软外键** — 表之间没有真正的数据库约束。关系在 PHP 中管理，不由 `FOREIGN KEY` 强制执行。
   
-- **Timestamps**: `datec` (creation), `tms` (modification), `date_valid` (validation)
+- **时间戳**：`date_creation`（创建）、`tms`（修改）、`date_valid`（验证）
 
-- **User references**: `fk_user_author`, `fk_user_modif`, `fk_user_valid`
+- **用户引用**：`fk_user_creat`、`fk_user_modif`、`fk_user_valid`
 
-- **Status field**: `status` (always SMALLINT)
+- **状态字段**：`status`（始终为 SMALLINT）
 
-- **Denormalized fields**: prefix with `denormalized_` to indicate calculated/cached value
-  - Example: `denormalized_total_amount` (sum of order lines)
+- **反规范化字段**：用 `denormalized_` 前缀来表示计算/缓存的值
+  - 示例：`denormalized_total_amount`（订单行的总和）
 
-### Index Names
+### 索引名
 
-- **Unique keys**: `uk_[table]_[description]`
-  - Example: `uk_mymodule_invoice_ref` (unique reference per invoice)
+- **唯一键**：`uk_[table]_[description]`
+  - 示例：`uk_mymodule_invoice_ref`（每张发票的唯一编号）
   
-- **Performance indexes**: `idx_[table]_[fieldname]`
-  - Example: `idx_mymodule_invoice_fk_soc` (join-friendly index)
+- **性能索引**：`idx_[table]_[fieldname]`
+  - 示例：`idx_mymodule_invoice_fk_soc`（便于连接的索引）
 
-## Common Design Patterns (常见设计模式)
+## 常见设计模式
 
-### Pattern 1: Simple Object (简单对象)
+### 模式 1：简单对象
 
-A standalone entity with basic CRUD operations. No parent-child relationships.
+一个具有基本 CRUD 操作的独立实体。没有父子关系。
 
-**Example**: Project, Task, or Activity
+**示例**：项目、任务或活动
 
 ```sql
--- File: llx_mymodule_project.sql
+-- 文件：llx_mymodule_project.sql
 CREATE TABLE llx_mymodule_project (
     rowid INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     ref VARCHAR(30) NOT NULL,
@@ -125,17 +125,17 @@ CREATE TABLE llx_mymodule_project (
     label VARCHAR(255) NOT NULL,
     description TEXT,
     
-    datec DATETIME NOT NULL,
+    date_creation DATETIME NOT NULL,
     tms TIMESTAMP,
-    fk_user_author INTEGER NOT NULL,
+    fk_user_creat INTEGER NOT NULL,
     fk_user_modif INTEGER,
     
     status SMALLINT DEFAULT 0,
-    import_key VARCHAR(32)
+    import_key VARCHAR(14)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**PHP Access Pattern**:
+**PHP 访问模式**：
 
 ```php
 <?php
@@ -147,7 +147,7 @@ class Project {
     public $status;
     
     public function create($user) {
-        $sql = "INSERT INTO llx_mymodule_project (ref, label, datec, fk_user_author, entity, status)";
+        $sql = "INSERT INTO llx_mymodule_project (ref, label, date_creation, fk_user_creat, entity, status)";
         $sql .= " VALUES ('".$this->db->escape($this->ref)."', '".$this->db->escape($this->label)."'";
         $sql .= ", '".$this->db->idate(dol_now())."', ".(int)$user->id.", ".(int)$this->entity.", 0)";
         
@@ -159,7 +159,7 @@ class Project {
     }
     
     public function fetch($id) {
-        $sql = "SELECT rowid, ref, label, status, datec, fk_user_author";
+        $sql = "SELECT rowid, ref, label, status, date_creation, fk_user_creat";
         $sql .= " FROM llx_mymodule_project WHERE rowid = ".(int)$id;
         
         $result = $this->db->query($sql);
@@ -176,14 +176,14 @@ class Project {
 }
 ```
 
-### Pattern 2: Header-Details (Master-Detail / 主-详情)
+### 模式 2：主-从表
 
-One parent record with multiple child records. Common in invoices, orders, contracts.
+一条父记录对应多条子记录。常见于发票、订单、合同。
 
-**Example**: Order with Order Lines
+**示例**：带订单行的订单
 
 ```sql
--- File: llx_mymodule_order.sql (parent/header)
+-- 文件：llx_mymodule_order.sql（父表/主表）
 CREATE TABLE llx_mymodule_order (
     rowid INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     ref VARCHAR(30) NOT NULL,
@@ -193,16 +193,16 @@ CREATE TABLE llx_mymodule_order (
     total_amount DOUBLE(24,8) DEFAULT 0,
     total_tax DOUBLE(24,8) DEFAULT 0,
     
-    datec DATETIME NOT NULL,
+    date_creation DATETIME NOT NULL,
     tms TIMESTAMP,
-    fk_user_author INTEGER NOT NULL,
+    fk_user_creat INTEGER NOT NULL,
     fk_user_modif INTEGER,
     
     status SMALLINT DEFAULT 0,
-    import_key VARCHAR(32)
+    import_key VARCHAR(14)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- File: llx_mymodule_orderline.sql (child/detail)
+-- 文件：llx_mymodule_orderline.sql（子表/从表）
 CREATE TABLE llx_mymodule_orderline (
     rowid INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     fk_order INTEGER NOT NULL,
@@ -215,28 +215,26 @@ CREATE TABLE llx_mymodule_orderline (
     total_ht DOUBLE(24,8) DEFAULT 0,
     total_ttc DOUBLE(24,8) DEFAULT 0,
     
-    datec DATETIME NOT NULL,
-    fk_user_author INTEGER NOT NULL,
+    date_creation DATETIME NOT NULL,
+    fk_user_creat INTEGER NOT NULL,
     
-    import_key VARCHAR(32)
+    import_key VARCHAR(14)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**Keys and Indexes** (llx_mymodule_order.key.sql):
+**键和索引**（llx_mymodule_order.key.sql）：
 
 ```sql
 ALTER TABLE llx_mymodule_order ADD UNIQUE uk_mymodule_order_ref (ref, entity);
-ALTER TABLE llx_mymodule_order ADD CONSTRAINT fk_mymodule_order_fk_soc 
-    FOREIGN KEY (fk_soc) REFERENCES llx_societe (rowid);
+-- 仅软外键：无真实 FOREIGN KEY 约束（在 PHP 中管理）
 ALTER TABLE llx_mymodule_order ADD INDEX idx_mymodule_order_entity (entity);
 ALTER TABLE llx_mymodule_order ADD INDEX idx_mymodule_order_fk_soc (fk_soc);
 
-ALTER TABLE llx_mymodule_orderline ADD CONSTRAINT fk_mymodule_orderline_fk_order 
-    FOREIGN KEY (fk_order) REFERENCES llx_mymodule_order (rowid);
+-- 仅软外键（无 FOREIGN KEY 约束，遵循 Dolibarr 规则）
 ALTER TABLE llx_mymodule_orderline ADD INDEX idx_mymodule_orderline_fk_order (fk_order);
 ```
 
-**PHP Deletion Pattern** (respects triggers):
+**PHP 删除模式**（尊重触发器）：
 
 ```php
 <?php
@@ -244,11 +242,11 @@ public function delete($user) {
     $this->db->begin();
     
     try {
-        // Delete children FIRST (respects triggers on orderline deletion)
+        // 先删除子记录（尊重 orderline 删除的触发器）
         $sql = "DELETE FROM llx_mymodule_orderline WHERE fk_order = ".(int)$this->rowid;
         if (!$this->db->query($sql)) throw new Exception("Failed to delete orderlines");
         
-        // Then delete parent
+        // 然后删除父记录
         $sql = "DELETE FROM llx_mymodule_order WHERE rowid = ".(int)$this->rowid;
         if (!$this->db->query($sql)) throw new Exception("Failed to delete order");
         
@@ -261,16 +259,16 @@ public function delete($user) {
 }
 ```
 
-### Pattern 3: EAV (Entity-Attribute-Value / 实体-属性-值)
+### 模式 3：EAV（实体-属性-值）
 
-Flexible schema for storing dynamic/custom attributes. Use cautiously as it impacts query performance.
+用于存储动态/自定义属性的灵活架构。谨慎使用，因为它会影响查询性能。
 
-**When to use**: When you need unlimited custom attributes without schema modifications
+**何时使用**：当你需要无限的自定义属性而无需修改架构时
 
-**When NOT to use**: Use Extrafields feature instead for most cases
+**何时不用**：大多数情况下请改用附加字段功能
 
 ```sql
--- File: llx_mymodule_attributes.sql (flexible attribute storage)
+-- 文件：llx_mymodule_attributes.sql（灵活的属性存储）
 CREATE TABLE llx_mymodule_attributes (
     rowid INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     fk_object INTEGER NOT NULL,
@@ -280,61 +278,61 @@ CREATE TABLE llx_mymodule_attributes (
     attribute_code VARCHAR(50) NOT NULL,
     attribute_value TEXT,
     
-    datec DATETIME NOT NULL,
-    fk_user_author INTEGER NOT NULL,
+    date_creation DATETIME NOT NULL,
+    fk_user_creat INTEGER NOT NULL,
     
-    import_key VARCHAR(32),
+    import_key VARCHAR(14),
     
     UNIQUE KEY uk_mymodule_attrs (fk_object, object_type, attribute_code, entity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**Limitations**: Avoid using EAV for frequently-searched attributes. Use denormalized fields instead.
+**局限性**：避免将 EAV 用于频繁搜索的属性。请改用反规范化字段。
 
-## Performance Considerations (性能考虑)
+## 性能考虑
 
-### Indexing Strategy
+### 索引策略
 
 ```sql
--- Create indexes for:
--- 1. Foreign keys (join operations)
+-- 为以下项创建索引：
+-- 1. 外键（连接操作）
 ALTER TABLE llx_mymodule_order ADD INDEX idx_mymodule_order_fk_soc (fk_soc);
 
--- 2. Status fields (filtering)
+-- 2. 状态字段（过滤）
 ALTER TABLE llx_mymodule_order ADD INDEX idx_mymodule_order_status (status);
 
--- 3. Date ranges (date filters)
-ALTER TABLE llx_mymodule_order ADD INDEX idx_mymodule_order_datec (datec);
+-- 3. 日期范围（日期过滤）
+ALTER TABLE llx_mymodule_order ADD INDEX idx_mymodule_order_date_creation (date_creation);
 
--- 4. Composite searches
+-- 4. 组合搜索
 ALTER TABLE llx_mymodule_order ADD INDEX idx_mymodule_order_entity_status (entity, status);
 ```
 
-### Denormalized Fields (Caching)
+### 反规范化字段（缓存）
 
-When joining multiple tables is expensive, cache calculated values:
+当连接多个表的开销很大时，缓存计算出的值：
 
 ```sql
--- Store total in order table instead of SUM(orderline) each query
+-- 将总额存储在订单表中，而不是每次查询都 SUM(orderline)
 ALTER TABLE llx_mymodule_order ADD COLUMN denormalized_total_ht DOUBLE(24,8);
 ALTER TABLE llx_mymodule_order ADD COLUMN denormalized_total_tax DOUBLE(24,8);
 ```
 
-**Maintenance Requirements**:
+**维护要求**：
 
-1. Update denormalized field in business logic after line changes
-2. Add repair function to recalculate from source data
-3. Track updates in `tms` field
+1. 行变更后，在业务逻辑中更新反规范化字段
+2. 添加修复函数，从源数据重新计算
+3. 在 `tms` 字段中追踪更新
 
 ```php
 <?php
-// Recalculate when orderline is added
+// 当 orderline 被添加时重新计算
 public function addLine($description, $qty, $unit_price) {
-    // Insert line
+    // 插入行
     $sql = "INSERT INTO llx_mymodule_orderline ...";
     $this->db->query($sql);
     
-    // Recalculate denormalized total
+    // 重新计算反规范化总额
     $this->recalculateTotals();
 }
 
@@ -346,29 +344,29 @@ private function recalculateTotals() {
 }
 ```
 
-### Fields to Avoid Indexing
+### 应避免索引的字段
 
-- TEXT or MEDIUMTEXT columns (too large)
-- BLOB columns
-- Columns with low selectivity (many duplicates)
+- TEXT 或 MEDIUMTEXT 列（太大）
+- BLOB 列
+- 选择性低的列（重复值多）
 
-## SQL Migration & Upgrade (升级脚本)
+## SQL 迁移与升级
 
-### File Structure
+### 文件结构
 
-Place migration files in `mymodule/sql/migration/`:
+将迁移文件放在 `mymodule/sql/migration/` 中：
 
-- `1.0.0-1.1.0.sql` - incremental migrations
-- Follow MySQL syntax (auto-converted for PostgreSQL)
+- `1.0.0-1.1.0.sql` - 增量迁移
+- 遵循 MySQL 语法（为 PostgreSQL 自动转换）
 
-### Example Migration
+### 迁移示例
 
 ```sql
--- File: mymodule/sql/migration/1.0.0-1.1.0.sql
--- Add new status field to order table
+-- 文件：mymodule/sql/migration/1.0.0-1.1.0.sql
+-- 向订单表添加新的状态字段
 ALTER TABLE llx_mymodule_order ADD COLUMN approval_status SMALLINT DEFAULT 0;
 
--- Create new payment tracking table
+-- 创建新的支付追踪表
 CREATE TABLE llx_mymodule_payment (
     rowid INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     fk_order INTEGER NOT NULL,
@@ -378,138 +376,129 @@ CREATE TABLE llx_mymodule_payment (
     entity INTEGER DEFAULT 1 NOT NULL
 ) ENGINE=InnoDB;
 
-ALTER TABLE llx_mymodule_payment ADD CONSTRAINT fk_mymodule_payment_fk_order 
-    FOREIGN KEY (fk_order) REFERENCES llx_mymodule_order (rowid);
+-- 仅软外键：索引，无 FOREIGN KEY 约束（遵循 Dolibarr 规则）
+ALTER TABLE llx_mymodule_payment ADD INDEX idx_mymodule_payment_fk_order (fk_order);
 ```
 
-### Upgrade Safety Rules
+### 升级安全规则
 
-1. **Backwards compatibility**: migrations must work on upgrade paths
-2. **Deprecation windows**: keep unused tables for 2+ major versions before DROP
-3. **Version detection**: check table existence before ALTER
+1. **向后兼容**：迁移必须在升级路径上可用
+2. **弃用窗口**：在 DROP 之前将未使用的表保留 2 个以上主版本
+3. **版本检测**：在 ALTER 之前检查表是否存在
 
 ```php
 <?php
-// In module's upgrade hook
+// 在模块的升级钩子中
 if ($action == 'upgrade' && version_compare($current_version, '1.1.0', '<')) {
     $sql = "SHOW COLUMNS FROM llx_mymodule_order LIKE 'approval_status'";
     if (!$this->db->num_rows($this->db->query($sql))) {
-        // Column doesn't exist, run migration
+        // 列不存在，执行迁移
         include 'sql/migration/1.0.0-1.1.0.sql';
     }
 }
 ```
 
-## Common Errors & Solutions (常见错误)
+## 常见错误与解决方案
 
-### Error 1: Storing Money as VARCHAR
+### 错误 1：将金额存储为 VARCHAR
 
-**Wrong**:
+**错误做法**：
 ```sql
 INSERT INTO llx_mymodule_order (total_amount) VALUES ('412.62');
 ```
 
-**Problem**: String '412.62' converted to DOUBLE(24,8) becomes 412.61999512. Only PHP sees correct value; database and other tools see wrong value.
+**问题**：字符串 '412.62' 转换为 DOUBLE(24,8) 后变成 412.61999512。只有 PHP 看到正确的值；数据库和其他工具看到错误的值。
 
-**Correct**:
+**正确做法**：
 ```sql
--- Use numeric type without quotes
+-- 使用不带引号的数值类型
 $sql = "INSERT INTO llx_mymodule_order (total_amount) VALUES (".(float)412.62.")";
 
--- Use price2num() in PHP for consistency
-$amount = price2num(412.62, 'MT'); // 'MT' for totals, 'MU' for unit prices
+-- 在 PHP 中使用 price2num() 以保持一致
+$amount = price2num(412.62, 'MT'); // 'MT' 用于总额，'MU' 用于单价
 $sql = "INSERT INTO llx_mymodule_order (total_amount) VALUES (".$amount.")";
 ```
 
-### Error 2: Using DELETE CASCADE
+### 错误 2：使用 DELETE CASCADE
 
-**Wrong**:
+**错误做法**：
 ```sql
 ALTER TABLE llx_mymodule_orderline ADD CONSTRAINT fk_orderline_order 
     FOREIGN KEY (fk_order) REFERENCES llx_mymodule_order (rowid) 
-    ON DELETE CASCADE;  -- FORBIDDEN!
+    ON DELETE CASCADE;  -- 禁止！
 ```
 
-**Problem**: When parent order is deleted, CASCADE bypass Dolibarr triggers. External modules listening for line-deletion never execute their code, breaking business logic.
+**问题**：当父订单被删除时，CASCADE 会绕过 Dolibarr 触发器。监听行删除的外部模块永远不会执行其代码，从而破坏业务逻辑。
 
-**Correct**:
+**正确做法**：
 ```sql
--- Use soft foreign key (no CASCADE)
-ALTER TABLE llx_mymodule_orderline ADD CONSTRAINT fk_orderline_order 
-    FOREIGN KEY (fk_order) REFERENCES llx_mymodule_order (rowid);
+-- 使用软外键：仅索引，无 FOREIGN KEY 约束，无 CASCADE
+ALTER TABLE llx_mymodule_orderline ADD INDEX idx_mymodule_orderline_fk_order (fk_order);
 
--- Handle deletion in PHP (respects all triggers)
+-- 在 PHP 中处理删除（尊重所有触发器）
 public function delete($user) {
-    // Delete orderlines manually to trigger hooks
+    // 手动删除 orderline 以触发钩子
     $sql = "SELECT rowid FROM llx_mymodule_orderline WHERE fk_order = ".(int)$this->rowid;
     $lines = $this->db->query($sql);
     while ($line = $this->db->fetch_object($lines)) {
         $orderline = new OrderLine($this->db);
-        $orderline->delete($user); // Triggers fire here
+        $orderline->delete($user); // 触发器在这里触发
     }
     
-    // Delete parent
+    // 删除父记录
     $sql = "DELETE FROM llx_mymodule_order WHERE rowid = ".(int)$this->rowid;
     return $this->db->query($sql);
 }
 ```
 
-### Error 3: Using Database Functions for Dates
+### 错误 3：使用数据库函数处理日期
 
-**Wrong**:
+**错误做法**：
 ```sql
--- Database NOW() uses server timezone, ignoring PHP timezone
-$sql = "SELECT * FROM llx_mymodule_order WHERE datec > NOW()";
+-- 数据库的 NOW() 使用服务器时区，忽略 PHP 时区
+$sql = "SELECT * FROM llx_mymodule_order WHERE date_creation > NOW()";
 
--- Datediff bypasses indexes on datec field
-$sql = "SELECT * FROM llx_mymodule_order WHERE DATEDIFF(datec, NOW()) > 7";
+-- DATEDIFF 绕过 date_creation 字段的索引
+$sql = "SELECT * FROM llx_mymodule_order WHERE DATEDIFF(date_creation, NOW()) > 7";
 ```
 
-**Problems**:
-- Multi-timezone issues (database TZ ≠ PHP TZ)
-- No index usage (slow queries)
-- Portability issues (NOW(), DATEDIFF differ in PostgreSQL)
+**问题**：
+- 多时区问题（数据库时区 ≠ PHP 时区）
+- 无法使用索引（查询缓慢）
+- 可移植性问题（NOW()、DATEDIFF 在 PostgreSQL 中不同）
 
-**Correct**:
+**正确做法**：
 ```php
 <?php
-// Use PHP date functions
-$now = dol_now();  // Current timestamp
+// 使用 PHP 日期函数
+$now = dol_now();  // 当前时间戳
 $seven_days_ago = $now - (7 * 24 * 3600);
 
-// Convert to database format using idate()
-$sql = "SELECT * FROM llx_mymodule_order WHERE datec > '".$this->db->idate($now)."'";
+// 使用 idate() 转换为数据库格式
+$sql = "SELECT rowid, ref, status FROM llx_mymodule_order WHERE date_creation > '".$this->db->idate($now)."'";
 
-// Use simple comparison (uses index)
-$sql = "SELECT * FROM llx_mymodule_order WHERE datec < '".$this->db->idate($seven_days_ago)."'";
+// 使用简单比较（使用索引）
+$sql = "SELECT rowid, ref, status FROM llx_mymodule_order WHERE date_creation < '".$this->db->idate($seven_days_ago)."'";
 ```
 
-## Activation Checklist (激活检查清单)
+## 激活检查清单
 
-Before enabling your module for production, verify:
+在将模块投入生产之前，请验证：
 
-- [ ] All table names start with `llx_`
-- [ ] Primary key named `rowid`, never `id`
-- [ ] Money fields use `DOUBLE(24,8)`, VAT rates use `DOUBLE(6,3)`
-- [ ] No ENUM types (use SMALLINT + PHP validation)
-- [ ] No DELETE CASCADE or ON UPDATE CASCADE
-- [ ] No database triggers or stored procedures
-- [ ] Foreign key naming: `fk_[table]_[field]`
-- [ ] Unique key naming: `uk_[table]_[description]`
-- [ ] Index naming: `idx_[table]_[fieldname]`
-- [ ] Denormalized fields prefixed with `denormalized_`
-- [ ] `.sql` file creates table structure
-- [ ] `.key.sql` file creates indexes/keys
-- [ ] InnoDB engine for MySQL/MariaDB
-- [ ] All date functions use PHP (not SQL)
-- [ ] All amounts use `price2num()` for precision
-- [ ] Deletion logic respects triggers (manual CRUD, no CASCADE)
-- [ ] Migration files follow naming: `x.y.z-a.b.c.sql`
-
-## Reference Files
-
-See also:
-- [Module Structure reference](./module-structure.md) - descriptor, file tree, permissions
-- [Coding Rules reference](./coding-rules.md) - PHP, SQL, HTML standards
-- [Technical Components reference](./technical-components.md) - tabs, menus, config
-- [Hooks & Triggers reference](./hooks-triggers.md) - extension points
+- [ ] 所有表名以 `llx_` 开头
+- [ ] 主键命名为 `rowid`，绝不用 `id`
+- [ ] 金额字段使用 `DOUBLE(24,8)`，增值税税率使用 `DOUBLE(6,3)`
+- [ ] 无 ENUM 类型（使用 SMALLINT + PHP 验证）
+- [ ] 无 DELETE CASCADE 或 ON UPDATE CASCADE
+- [ ] 无数据库触发器或存储过程
+- [ ] 外键字段使用 `fk_<target>` 短格式（`fk_soc`、`fk_user_creat`）；仅软外键（无 `FOREIGN KEY` 约束）
+- [ ] 唯一键命名：`uk_[table]_[description]`
+- [ ] 索引命名：`idx_[table]_[fieldname]`
+- [ ] 反规范化字段以 `denormalized_` 为前缀
+- [ ] `.sql` 文件创建表结构
+- [ ] `.key.sql` 文件创建索引/键
+- [ ] MySQL/MariaDB 使用 InnoDB 引擎
+- [ ] 所有日期函数使用 PHP（而非 SQL）
+- [ ] 所有金额使用 `price2num()` 以保证精度
+- [ ] 删除逻辑尊重触发器（手动 CRUD，无 CASCADE）
+- [ ] 迁移文件遵循命名：`x.y.z-a.b.c.sql`

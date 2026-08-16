@@ -1,59 +1,59 @@
-# Dolibarr Import/Export Development Guide
+# Dolibarr 导入/导出开发指南
 
 Source: https://wiki.dolibarr.org/index.php/Module_Exports_En, https://wiki.dolibarr.org/index.php/Mass_imports
 
 ---
 
-## Overview of Import/Export System
+## 导入/导出系统概述
 
-Dolibarr provides built-in import and export capabilities for managing bulk data operations. The system is designed to handle data migration, synchronization, and integration scenarios with external systems.
+Dolibarr 提供内置的导入和导出能力，用于处理批量数据操作。该系统旨在处理与外部系统之间的数据迁移、同步和集成场景。
 
-### Supported File Formats
+### 支持的文件格式
 
-- **CSV (Comma-Separated Values)** - Simple, universal, recommended for large files
-- **TSV (Tab-Separated Values)** - Similar to CSV but with tab delimiters
-- **XLS 2007** - Modern Excel format (.xlsx)
-- **XLS 95** - Legacy Excel format (.xls)
+- **CSV（逗号分隔值）** - 简单、通用，推荐用于大文件
+- **TSV（制表符分隔值）** - 与 CSV 类似，但使用制表符作分隔符
+- **XLS 2007** - 现代 Excel 格式（.xlsx）
+- **XLS 95** - 旧版 Excel 格式（.xls）
 
-### Key Concepts
+### 关键概念
 
-- **Export** (导出): Extract data from Dolibarr into external files
-- **Import** (导入): Load data from external files into Dolibarr
-- **Field Mapping** (字段映射): Matching source columns to Dolibarr database fields
-- **Validation** (验证): Checking data integrity and compliance with business rules
-- **Profile** (配置文件): Saved set of export/import settings for reuse
+- **Export**（导出）：将 Dolibarr 中的数据提取到外部文件
+- **Import**（导入）：将外部文件中的数据载入 Dolibarr
+- **Field Mapping**（字段映射）：将源列与 Dolibarr 数据库字段匹配
+- **Validation**（验证）：检查数据完整性及是否符合业务规则
+- **Profile**（配置文件）：保存的一组导出/导入设置，可复用
 
-### When to Use Import vs API
+### 何时使用导入而非 API
 
-| Scenario | Method | Reason |
+| 场景 | 方式 | 理由 |
 |----------|--------|--------|
-| Bulk data migration | Import Module | Simple, no custom development |
-| One-time data load | Custom script with CRUD | More control, validation |
-| Batch sync with external system | API calls | Business rules applied |
-| Large dataset (>100MB) | Direct DB access | Performance, transactions |
-| Real-time integration | Webhooks/API | Immediate, bi-directional |
+| 批量数据迁移 | 导入模块 | 简单，无需自定义开发 |
+| 一次性数据载入 | 带 CRUD 的自定义脚本 | 更多控制、验证 |
+| 与外部系统批量同步 | API 调用 | 应用业务规则 |
+| 大数据集（>100MB） | 直接访问数据库 | 性能、事务 |
+| 实时集成 | Webhooks/API | 即时、双向 |
 
 ---
 
-## Export Functionality
+## 导出功能
 
-### Standard Export Fields
+### 标准导出字段
 
-Core object types support export with standard fields:
+核心对象类型支持使用标准字段导出：
 
-- **Third Parties (Societe)**: name, type, code_client, code_fournisseur, address, zip, city, country, phone, email, tva_intra, status
-- **Contacts**: firstname, lastname, email, phone, mobile, address, zip, city, country, position
-- **Products**: ref, label, description, price_net, price_ht, status, type, tva_tx, barcode, weight
-- **Invoices**: ref, ref_external, date, date_limit, amount_ht, amount_tva, amount_ttc, status, payment_mode
-- **Orders**: ref, ref_client, date, date_delivery, amount_ht, amount_tva, amount_ttc, status
-- **Proposals**: ref, ref_client, date, date_limit, validity_date, amount_ht, amount_tva, amount_ttc, status
+- **第三方（Societe）**：name、type、code_client、code_fournisseur、address、zip、city、country、phone、email、tva_intra、status
+- **联系人**：firstname、lastname、email、phone、mobile、address、zip、city、country、position
+- **产品**：ref、label、description、price_net、price_ht、status、type、tva_tx、barcode、weight
+- **发票**：ref、ref_external、date、date_limit、amount_ht、amount_tva、amount_ttc、status、payment_mode
+- **订单**：ref、ref_client、date、date_delivery、amount_ht、amount_tva、amount_ttc、status
+- **报价单**：ref、ref_client、date、date_limit、validity_date、amount_ht、amount_tva、amount_ttc、status
 
-### Custom Export Declaration
+### 自定义导出声明
 
-Declare export in module descriptor to offer custom datasets:
+在模块描述符中声明导出，以提供自定义数据集：
 
 ```php
-// In modMyModule.class.php constructor
+// 在 modMyModule.class.php 构造函数中
 $this->export_code = array(
     'myexport'  => 'Export Custom Objects',
     'myexport2' => 'Export Custom Objects with Details',
@@ -92,12 +92,12 @@ $this->export_fields_array = array(
 );
 ```
 
-### Export Permissions
+### 导出权限
 
-Enforce permissions in export module configuration:
+在导出模块配置中强制权限检查：
 
 ```php
-// In module export declaration
+// 在模块导出声明中
 public function getExportHeaders($exporttype)
 {
     global $user;
@@ -119,13 +119,13 @@ public function getExportHeaders($exporttype)
 
 ---
 
-## Simple Export Implementation Example
+## 简单导出实现示例
 
-### CSV Export Script
+### CSV 导出脚本
 
 ```php
 <?php
-// File: mymodule/export.php
+// 文件：mymodule/export.php
 $res = 0;
 if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
     $res = @include($_SERVER["CONTEXT_DOCUMENT_ROOT"]."/main.inc.php");
@@ -138,45 +138,49 @@ if (!$res && file_exists("../../main.inc.php")) {
 }
 if (!$res) die("Include of main fails");
 
-// Permission check
+// 权限检查
 if (!$user->rights->mymodule->export) {
     accessforbidden();
 }
 
-// Get filters
+// 获取过滤器
 $filter_status = GETPOST('status', 'int');
 $filter_year = GETPOST('year', 'int');
 
-// Build query
+// 构建查询
 $sql = "SELECT rowid, ref, label, description, date_creation, status";
 $sql .= " FROM ".MAIN_DB_PREFIX."mymodule_object";
-$sql .= " WHERE entity = ".((int) $conf->entity->current;
+$sql .= " WHERE entity = ".((int) $conf->entity);
 if ($filter_status !== '') {
     $sql .= " AND status = ".((int) $filter_status);
 }
 if ($filter_year > 0) {
-    $sql .= " AND YEAR(date_creation) = ".((int) $filter_year);
+    // 用 PHP 计算年份起止，避免 SQL 的 YEAR() 函数（违反 Dolibarr 规则）
+    $year_start = dol_mktime(0, 0, 0, 1, 1, $filter_year);
+    $year_end = dol_mktime(23, 59, 59, 12, 31, $filter_year);
+    $sql .= " AND date_creation >= '".$db->idate($year_start)."'";
+    $sql .= " AND date_creation <= '".$db->idate($year_end)."'";
 }
 $sql .= " ORDER BY ref";
 
-// Execute query
+// 执行查询
 $resql = $db->query($sql);
 if (!$resql) {
     die("Error: ".$db->lasterror());
 }
 
-// Prepare CSV output
+// 准备 CSV 输出
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="export_'.dol_print_date(dol_now(), '%Y%m%d_%H%M%S').'.csv"');
 
-// Output BOM for Excel UTF-8 compatibility
+// 输出 BOM 以兼容 Excel UTF-8
 echo "\xEF\xBB\xBF";
 
-// Write header row
+// 写入表头行
 $headers = array('ID', 'Reference', 'Label', 'Description', 'Date Created', 'Status');
 echo implode(',', array_map('escapeCsvValue', $headers))."\n";
 
-// Write data rows
+// 写入数据行
 while ($obj = $db->fetch_object($resql)) {
     $row = array(
         $obj->rowid,
@@ -201,20 +205,20 @@ function escapeCsvValue($value)
 ?>
 ```
 
-### Export with Custom Fields
+### 带自定义字段的导出
 
 ```php
 <?php
-// File: mymodule/export_detailed.php
+// 文件：mymodule/export_detailed.php
 require_once DOL_DOCUMENT_ROOT.'/custom/mymodule/class/myobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 
-// Permission check
+// 权限检查
 if (!$user->rights->mymodule->export) {
     accessforbidden();
 }
 
-// Prepare data
+// 准备数据
 $sql = "SELECT t.rowid, t.ref, t.label, t.description, t.date_creation, t.status, t.fk_soc";
 $sql .= " FROM ".MAIN_DB_PREFIX."mymodule_object as t";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as c ON t.fk_soc = c.rowid";
@@ -226,7 +230,7 @@ if (!$resql) {
     die("Query error: ".$db->lasterror());
 }
 
-// CSV headers
+// CSV 表头
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="objects_'.date('Y-m-d_H-i-s').'.csv"');
 echo "\xEF\xBB\xBF";
@@ -242,13 +246,13 @@ $headers = array(
 );
 echo implode(',', $headers)."\n";
 
-// Data rows with transformations
+// 带转换的数据行
 while ($obj = $db->fetch_object($resql)) {
     $status_label = 'Active';
     if ($obj->status == 0) $status_label = 'Draft';
     if ($obj->status == 2) $status_label = 'Cancelled';
     
-    // Get company name
+    // 获取公司名称
     if ($obj->fk_soc > 0) {
         $soc = new Societe($db);
         $soc->fetch($obj->fk_soc);
@@ -275,24 +279,24 @@ $db->free($resql);
 
 ---
 
-## Import Functionality
+## 导入功能
 
-### Import Process Flow
+### 导入流程
 
-1. **File Upload**: User selects CSV or Excel file
-2. **Header Detection**: System detects column names or user maps them
-3. **Preview**: Display sample of data to be imported
-4. **Validation**: Check required fields, data types, foreign keys
-5. **Conflict Resolution**: Handle duplicates, existing records
-6. **Import**: Insert or update records in database
-7. **Report**: Show success/error summary
+1. **文件上传**：用户选择 CSV 或 Excel 文件
+2. **表头检测**：系统检测列名，或由用户映射
+3. **预览**：显示待导入数据的样本
+4. **验证**：检查必填字段、数据类型、外键
+5. **冲突处理**：处理重复项、已有记录
+6. **导入**：在数据库中插入或更新记录
+7. **报告**：显示成功/错误摘要
 
-### Field Mapping Configuration
+### 字段映射配置
 
-Import requires mapping external columns to Dolibarr database fields:
+导入需要将外部列映射到 Dolibarr 数据库字段：
 
 ```php
-// Example mapping for third parties import
+// 第三方导入的映射示例
 $fieldmapping = array(
     0 => array('name' => 'Company Name', 'dbfield' => 'name'),
     1 => array('name' => 'Company Code', 'dbfield' => 'code_client'),
@@ -303,71 +307,73 @@ $fieldmapping = array(
     6 => array('name' => 'Phone', 'dbfield' => 'phone'),
     7 => array('name' => 'Email', 'dbfield' => 'email'),
     8 => array('name' => 'VAT Number', 'dbfield' => 'tva_intra'),
-    9 => array('name' => 'Type', 'dbfield' => 'client'), // 1=customer, 2=prospect, 0=other
+    9 => array('name' => 'Type', 'dbfield' => 'client'), // 1=客户、2=潜在客户、0=其他
 );
 ```
 
-### Import Data Format Requirements
+### 导入数据格式要求
 
-#### Date Fields
+#### 日期字段
 
-Dolibarr accepts standard date formats:
-- ISO format: `2025-01-19` (recommended)
-- Locale format: based on user's language
-- Excel dates: automatically converted
+Dolibarr 接受标准日期格式：
 
-Recommendation: Use YYYY-MM-DD format for maximum compatibility.
+- ISO 格式：`2025-01-19`（推荐）
+- 本地化格式：取决于用户语言
+- Excel 日期：自动转换
 
-#### Country/State Codes
+建议：使用 YYYY-MM-DD 格式以获得最大兼容性。
 
-- **Country**: Use ISO 2-letter country codes (US, FR, IT, DE, etc.)
-- **State**: Use standard state/province abbreviations
-  - US states: MA, CA, NY (2-letter code)
-  - Canada: ON, BC, AB (2-letter code)
-  - France: 75, 92, 93 (3-digit code for departments)
+#### 国家/地区代码
 
-#### Boolean/Status Fields
+- **国家**：使用 ISO 两位字母国家代码（US、FR、IT、DE 等）
+- **州/省**：使用标准州/省缩写
+  - 美国各州：MA、CA、NY（两位字母代码）
+  - 加拿大：ON、BC、AB（两位字母代码）
+  - 法国：75、92、93（省份的三位数字代码）
 
-Use numeric values:
-- `0` = false / inactive / draft
-- `1` = true / active / validated
-- `2` = cancelled / archived
+#### 布尔/状态字段
+
+使用数值：
+
+- `0` = 假 / 未激活 / 草稿
+- `1` = 真 / 激活 / 已验证
+- `2` = 已取消 / 已归档
 
 ---
 
-## Import Configuration File Example
+## 导入配置文件示例
 
-### Standard Import Configuration
+### 标准导入配置
 
-Create file: `mymodule/import/import_myobjects.php`
+创建文件：`mymodule/import/import_myobjects.php`
 
 ```php
 <?php
 /**
- * Import profile configuration for MyModule objects
- * File: mymodule/import/import_myobjects.php
+ * MyModule 对象的导入配置文件
+ * 文件：mymodule/import/import_myobjects.php
  * 
- * Dolibarr uses this file to define how to import data into MyModule objects.
- * Place this file in the import subdirectory of your module.
+ * Dolibarr 使用此文件定义如何将数据导入 MyModule 对象。
+ * 将此文件放在模块的 import 子目录中。
  */
 
-// Define the import profile properties
+// 定义导入配置文件属性
 $arrayimport = array();
 $arrayimport['version'] = '1.0';
 $arrayimport['create']['date_creation'] = 'CreationDate';
 $arrayimport['create']['date_modification'] = 'ModificationDate';
 
-// Define which Dolibarr table we're importing into
+// 定义要导入到哪个 Dolibarr 表
 $arrayimport['tbl'] = 'mymodule_object';
 $arrayimport['tbl_name'] = 'MyModule Objects';
 
-// Required fields validation
+// 必填字段验证
 $arrayimport['mandatory'] = array(
     'ref'   => 'Reference',
     'label' => 'Label',
 );
 
-// Field mapping from CSV columns to database fields
+// 从 CSV 列到数据库字段的映射
 $arrayimport['fields'] = array(
     'rowid'         => array(
         'label'       => 'ID',
@@ -416,7 +422,7 @@ $arrayimport['fields'] = array(
     ),
 );
 
-// Array to transform columns from CSV to database fields
+// 将 CSV 列转换为数据库字段的数组
 $arrayimport['transform'] = array(
     'convertText'       => 'sanitizeText',
     'convertInteger'    => 'sanitizeInteger',
@@ -425,25 +431,25 @@ $arrayimport['transform'] = array(
 ?>
 ```
 
-### Import Configuration with Advanced Validation
+### 带高级验证的导入配置
 
 ```php
 <?php
-// File: mymodule/import/import_myobjects_advanced.php
+// 文件：mymodule/import/import_myobjects_advanced.php
 
 $arrayimport = array();
 $arrayimport['version'] = '1.0';
 $arrayimport['tbl'] = 'mymodule_object';
 $arrayimport['tbl_name'] = 'MyModule Objects Advanced';
 
-// Mandatory fields
+// 必填字段
 $arrayimport['mandatory'] = array(
     'ref'   => 'Reference',
     'label' => 'Label',
     'fk_soc' => 'Company ID',
 );
 
-// Field definitions with validation rules
+// 带验证规则的字段定义
 $arrayimport['fields'] = array(
     'ref' => array(
         'label'       => 'Reference',
@@ -480,7 +486,7 @@ $arrayimport['fields'] = array(
     ),
 );
 
-// Custom validation functions
+// 自定义验证函数
 $arrayimport['validators'] = array(
     'checkUniqueRef' => array(
         'class' => 'MyModuleImportValidator',
@@ -504,13 +510,13 @@ $arrayimport['validators'] = array(
 
 ---
 
-## Data Transformation Examples
+## 数据转换示例
 
-### Field Transformation Function
+### 字段转换函数
 
 ```php
 <?php
-// File: mymodule/class/import_transformer.class.php
+// 文件：mymodule/class/import_transformer.class.php
 
 class ImportTransformer
 {
@@ -522,10 +528,10 @@ class ImportTransformer
     }
     
     /**
-     * Transform text field - trim, escape, limit length
+     * 转换文本字段 - 去除空白、转义、限制长度
      *
-     * @param string $value      Value to transform
-     * @param int    $maxlength  Maximum length allowed
+     * @param string $value      要转换的值
+     * @param int    $maxlength  允许的最大长度
      * @return string
      */
     public function transformText($value, $maxlength = 0)
@@ -541,9 +547,9 @@ class ImportTransformer
     }
     
     /**
-     * Transform integer field
+     * 转换整数字段
      *
-     * @param mixed $value Value to transform
+     * @param mixed $value 要转换的值
      * @return int
      */
     public function transformInteger($value)
@@ -552,11 +558,11 @@ class ImportTransformer
     }
     
     /**
-     * Transform date field to Dolibarr format
+     * 将日期字段转换为 Dolibarr 格式
      *
-     * @param string $value     Date string
-     * @param string $format    Input format (e.g., 'Y-m-d')
-     * @return int              Unix timestamp or 0
+     * @param string $value     日期字符串
+     * @param string $format    输入格式（例如 'Y-m-d'）
+     * @return int              Unix 时间戳或 0
      */
     public function transformDate($value, $format = 'Y-m-d')
     {
@@ -575,17 +581,17 @@ class ImportTransformer
     }
     
     /**
-     * Transform decimal/price field
+     * 转换小数/价格字段
      *
-     * @param string $value Value with possible decimal separator
+     * @param string $value 可能带小数分隔符的值
      * @return float
      */
     public function transformPrice($value)
     {
-        // Remove whitespace
+        // 去除空白
         $value = trim($value);
         
-        // Replace common decimal separators with dot
+        // 将常见的小数分隔符替换为点
         $value = str_replace(',', '.', $value);
         $value = str_replace(' ', '', $value);
         
@@ -593,16 +599,16 @@ class ImportTransformer
     }
     
     /**
-     * Transform country code - normalize to ISO 2-letter code
+     * 转换国家代码 - 规范化为 ISO 两位字母代码
      *
-     * @param string $value Country name or code
-     * @return string       ISO 2-letter country code
+     * @param string $value 国家名称或代码
+     * @return string       ISO 两位字母国家代码
      */
     public function transformCountry($value)
     {
         $value = trim(strtoupper($value));
         
-        // If already 2-letter code, validate it
+        // 如果已经是两位字母代码，验证它
         if (strlen($value) === 2) {
             $sql = "SELECT code FROM ".MAIN_DB_PREFIX."c_country WHERE code = '".$this->db->escape($value)."'";
             $res = $this->db->query($sql);
@@ -611,7 +617,7 @@ class ImportTransformer
             }
         }
         
-        // Try to find by country name
+        // 尝试按国家名称查找
         $sql = "SELECT code FROM ".MAIN_DB_PREFIX."c_country WHERE label LIKE '".$this->db->escape($value)."%' LIMIT 1";
         $res = $this->db->query($sql);
         if ($res && $this->db->num_rows($res) > 0) {
@@ -623,10 +629,10 @@ class ImportTransformer
     }
     
     /**
-     * Transform boolean/status field
+     * 转换布尔/状态字段
      *
-     * @param mixed $value Value to transform
-     * @return int         0 or 1
+     * @param mixed $value 要转换的值
+     * @return int         0 或 1
      */
     public function transformBoolean($value)
     {
@@ -644,13 +650,13 @@ class ImportTransformer
 
 ---
 
-## Validation and Error Handling
+## 验证与错误处理
 
-### Validation Class
+### 验证类
 
 ```php
 <?php
-// File: mymodule/class/import_validator.class.php
+// 文件：mymodule/class/import_validator.class.php
 
 class MyModuleImportValidator
 {
@@ -663,10 +669,10 @@ class MyModuleImportValidator
     }
     
     /**
-     * Validate that reference is unique
+     * 验证引用是否唯一
      *
-     * @param string $ref       Reference value
-     * @param int    $rowid     Record ID (0 for new)
+     * @param string $ref       引用值
+     * @param int    $rowid     记录 ID（新建时为 0）
      * @return bool
      */
     public function validateUniqueRef($ref, $rowid = 0)
@@ -692,9 +698,9 @@ class MyModuleImportValidator
     }
     
     /**
-     * Validate that referenced society exists
+     * 验证引用的公司是否存在
      *
-     * @param int $fk_soc Society ID
+     * @param int $fk_soc 公司 ID
      * @return bool
      */
     public function validateSociety($fk_soc)
@@ -717,9 +723,9 @@ class MyModuleImportValidator
     }
     
     /**
-     * Validate positive number
+     * 验证正数
      *
-     * @param float $value Value to validate
+     * @param float $value 要验证的值
      * @return bool
      */
     public function validatePositiveNumber($value)
@@ -735,9 +741,9 @@ class MyModuleImportValidator
     }
     
     /**
-     * Validate VAT rate
+     * 验证增值税率
      *
-     * @param float $rate VAT rate percentage
+     * @param float $rate 增值税率百分比
      * @return bool
      */
     public function validateVatRate($rate)
@@ -753,9 +759,9 @@ class MyModuleImportValidator
     }
     
     /**
-     * Add error message
+     * 添加错误消息
      *
-     * @param string $message Error message
+     * @param string $message 错误消息
      * @return void
      */
     private function addError($message)
@@ -764,7 +770,7 @@ class MyModuleImportValidator
     }
     
     /**
-     * Get all errors
+     * 获取所有错误
      *
      * @return array
      */
@@ -774,7 +780,7 @@ class MyModuleImportValidator
     }
     
     /**
-     * Check if valid
+     * 检查是否有效
      *
      * @return bool
      */
@@ -786,18 +792,18 @@ class MyModuleImportValidator
 ?>
 ```
 
-### Import Process with Error Handling
+### 带错误处理的导入流程
 
 ```php
 <?php
-// File: mymodule/admin/import_data.php
+// 文件：mymodule/admin/import_data.php
 $res = 0;
 if (!$res && file_exists("../../main.inc.php")) {
     $res = @include("../../main.inc.php");
 }
 if (!$res) die("Include main fails");
 
-// Permission check
+// 权限检查
 if (!$user->rights->mymodule->write) {
     accessforbidden();
 }
@@ -828,19 +834,19 @@ if ($action === 'import' && !empty($_FILES['csvfile'])) {
         while (($data = fgetcsv($handle, 1000, ',')) !== false) {
             $rownum++;
             
-            // First row = headers
+            // 第一行 = 表头
             if ($rownum === 1) {
                 $headers = $data;
                 continue;
             }
             
-            // Build associative array from headers and data
+            // 根据表头和数据构建关联数组
             $record = array();
             foreach ($headers as $i => $header) {
                 $record[trim($header)] = isset($data[$i]) ? $data[$i] : '';
             }
             
-            // Transform and validate
+            // 转换并验证
             $ref = $transformer->transformText($record['Reference'], 50);
             $label = $transformer->transformText($record['Label'], 255);
             $status = $transformer->transformInteger($record['Status'] ?? 1);
@@ -862,7 +868,7 @@ if ($action === 'import' && !empty($_FILES['csvfile'])) {
                 continue;
             }
             
-            // Insert record
+            // 插入记录
             try {
                 $myobject = new MyObject($db);
                 $myobject->ref = $ref;
@@ -900,14 +906,14 @@ if ($action === 'import' && !empty($_FILES['csvfile'])) {
 
 ---
 
-## Advanced Import/Export Features
+## 高级导入/导出功能
 
-### Import Preview Function
+### 导入预览函数
 
 ```php
 <?php
 /**
- * Preview import data without saving
+ * 在不保存的情况下预览导入数据
  */
 public function previewImport($csvfile, $limit = 10)
 {
@@ -948,12 +954,12 @@ public function previewImport($csvfile, $limit = 10)
 ?>
 ```
 
-### Duplicate Detection
+### 重复检测
 
 ```php
 <?php
 /**
- * Detect duplicate records based on reference or email
+ * 基于引用或邮箱检测重复记录
  */
 public function detectDuplicates($records, $matchfield = 'ref')
 {
@@ -983,12 +989,12 @@ public function detectDuplicates($records, $matchfield = 'ref')
 ?>
 ```
 
-### Batch Processing with Progress Tracking
+### 带进度跟踪的批处理
 
 ```php
 <?php
 /**
- * Process large import file in batches
+ * 分批处理大型导入文件
  */
 public function importBatch($csvfile, $batchsize = 100)
 {
@@ -1008,7 +1014,7 @@ public function importBatch($csvfile, $batchsize = 100)
             continue;
         }
         
-        // Build record
+        // 构建记录
         $record = array();
         foreach ($headers as $i => $header) {
             $record[trim($header)] = isset($data[$i]) ? $data[$i] : '';
@@ -1016,7 +1022,7 @@ public function importBatch($csvfile, $batchsize = 100)
         
         $batch[] = $record;
         
-        // Process batch when limit reached
+        // 达到限制时处理该批
         if (count($batch) >= $batchsize) {
             $result = $this->processBatch($batch);
             $imported += $result['imported'];
@@ -1024,14 +1030,14 @@ public function importBatch($csvfile, $batchsize = 100)
             $errors = array_merge($errors, $result['errors']);
             $batch = array();
             
-            // Update progress (for UI)
+            // 更新进度（用于 UI）
             if (function_exists('set_progress')) {
                 set_progress($rownum);
             }
         }
     }
     
-    // Process remaining records
+    // 处理剩余记录
     if (!empty($batch)) {
         $result = $this->processBatch($batch);
         $imported += $result['imported'];
@@ -1053,43 +1059,43 @@ public function importBatch($csvfile, $batchsize = 100)
 
 ---
 
-## Performance Optimization
+## 性能优化
 
-### Memory Management for Large Files
+### 大文件的内存管理
 
 ```php
 <?php
 /**
- * Import with memory-efficient streaming
- * Suitable for files > 100MB
+ * 使用内存高效的流式导入
+ * 适用于大于 100MB 的文件
  */
 public function importLargeFile($csvfile, $memoryLimit = '512M')
 {
-    // Set PHP memory limit
+    // 设置 PHP 内存限制
     ini_set('memory_limit', $memoryLimit);
     
-    // Set execution time limit
-    set_time_limit(3600); // 1 hour
+    // 设置执行时间限制
+    set_time_limit(3600); // 1 小时
     
     $handle = fopen($csvfile, 'r');
     $rownum = 0;
     $imported = 0;
     
-    // Use streaming without loading entire file
+    // 使用流式处理，不加载整个文件
     while (($data = fgetcsv($handle, 1000)) !== false) {
         $rownum++;
         
-        // Process row
+        // 处理行
         if ($this->processRow($data, $rownum)) {
             $imported++;
         }
         
-        // Free memory periodically
+        // 定期释放内存
         if ($rownum % 1000 === 0) {
             gc_collect_cycles();
         }
         
-        // Yield control (for CLI/background processing)
+        // 让出控制权（用于 CLI/后台处理）
         if (function_exists('pcntl_signal_dispatch')) {
             pcntl_signal_dispatch();
         }
@@ -1102,12 +1108,12 @@ public function importLargeFile($csvfile, $memoryLimit = '512M')
 ?>
 ```
 
-### Database Transaction Optimization
+### 数据库事务优化
 
 ```php
 <?php
 /**
- * Use transactions for data integrity and performance
+ * 使用事务以保证数据完整性和性能
  */
 public function importWithTransactions($records, $batchsize = 1000)
 {
@@ -1148,16 +1154,16 @@ public function importWithTransactions($records, $batchsize = 1000)
 
 ---
 
-## Common Issues and Solutions
+## 常见问题与解决方案
 
-### Encoding Problems (Encoding Issues)
+### 编码问题
 
-**Problem**: Special characters appear as `???` in imported data.
+**问题**：导入的数据中特殊字符显示为 `???`。
 
-**Solutions**:
+**解决方案**：
 
 ```php
-// 1. Detect and convert encoding
+// 1. 检测并转换编码
 function detectAndConvertEncoding($data)
 {
     $encoding = mb_detect_encoding($data, 'UTF-8, ISO-8859-1, Windows-1252');
@@ -1167,26 +1173,26 @@ function detectAndConvertEncoding($data)
     return $data;
 }
 
-// 2. Handle BOM (Byte Order Mark) in CSV files
+// 2. 处理 CSV 文件中的 BOM（字节顺序标记）
 function removeBom($string)
 {
     $bom = pack('H*', 'EFBBBF');
     return preg_replace("/^$bom/", '', $string);
 }
 
-// 3. Read CSV with proper encoding declaration
+// 3. 以正确的编码声明读取 CSV
 $handle = fopen($csvfile, 'r');
 stream_filter_append($handle, 'convert.iconv.ISO-8859-1/UTF-8');
 ```
 
-### Field Mapping Errors
+### 字段映射错误
 
-**Problem**: Data goes to wrong columns or fields not recognized.
+**问题**：数据进入错误的列，或字段无法识别。
 
-**Solutions**:
+**解决方案**：
 
 ```php
-// Validate header names before import
+// 导入前验证表头名称
 function validateHeaders($headers, $expected_fields)
 {
     $missing = array_diff($expected_fields, $headers);
@@ -1201,7 +1207,7 @@ function validateHeaders($headers, $expected_fields)
     return array('valid' => true);
 }
 
-// Case-insensitive header matching
+// 大小写不敏感的表头匹配
 function matchHeaders($headers)
 {
     $mapping = array();
@@ -1219,14 +1225,14 @@ function matchHeaders($headers)
 ?>
 ```
 
-### Import Failure and Retry
+### 导入失败与重试
 
-**Problem**: Import fails midway with partial data inserted.
+**问题**：导入中途失败，部分数据已插入。
 
-**Solutions**:
+**解决方案**：
 
 ```php
-// Use save points for partial rollback
+// 使用保存点实现部分回滚
 public function importWithSavepoints($records)
 {
     $imported = 0;
@@ -1263,14 +1269,14 @@ public function importWithSavepoints($records)
 }
 ```
 
-### Data Mismatch Problems
+### 数据不匹配问题
 
-**Problem**: Imported data doesn't match expected format or constraints.
+**问题**：导入的数据与预期格式或约束不符。
 
-**Solutions**:
+**解决方案**：
 
 ```php
-// Comprehensive data validation before import
+// 导入前进行全面的数据验证
 public function validateRecord($record, $schema)
 {
     $errors = array();
@@ -1278,13 +1284,13 @@ public function validateRecord($record, $schema)
     foreach ($schema as $field => $rules) {
         $value = $record[$field] ?? '';
         
-        // Check required
+        // 检查必填
         if ($rules['required'] && empty($value)) {
             $errors[$field] = "Field is required";
             continue;
         }
         
-        // Check type
+        // 检查类型
         if (!empty($value) && isset($rules['type'])) {
             if ($rules['type'] === 'integer' && !is_numeric($value)) {
                 $errors[$field] = "Must be integer";
@@ -1294,12 +1300,12 @@ public function validateRecord($record, $schema)
             }
         }
         
-        // Check max length
+        // 检查最大长度
         if (isset($rules['maxlength']) && strlen($value) > $rules['maxlength']) {
             $errors[$field] = "Maximum {$rules['maxlength']} characters";
         }
         
-        // Check against whitelist
+        // 对照白名单检查
         if (isset($rules['allowed']) && !in_array($value, $rules['allowed'])) {
             $errors[$field] = "Invalid value: ".implode(', ', $rules['allowed']);
         }
@@ -1312,45 +1318,45 @@ public function validateRecord($record, $schema)
 
 ---
 
-## Security and Best Practices
+## 安全与最佳实践
 
-### Permission Checks
+### 权限检查
 
-Always verify user permissions before export/import:
+在导出/导入之前始终验证用户权限：
 
 ```php
 <?php
-// Export requires read permission
+// 导出需要 read 权限
 if (!$user->rights->mymodule->read && !$user->rights->mymodule->export) {
     accessforbidden();
 }
 
-// Import requires write permission
+// 导入需要 write 权限
 if (!$user->rights->mymodule->write) {
     accessforbidden();
 }
 ?>
 ```
 
-### File Validation
+### 文件验证
 
-Validate uploaded files:
+验证上传的文件：
 
 ```php
 <?php
 public function validateUploadedFile($file_tmp, $max_size = 52428800) // 50MB
 {
-    // Check file exists
+    // 检查文件是否存在
     if (!file_exists($file_tmp)) {
         return array('error' => 'File not found');
     }
     
-    // Check file size
+    // 检查文件大小
     if (filesize($file_tmp) > $max_size) {
         return array('error' => 'File too large (max 50MB)');
     }
     
-    // Check file type
+    // 检查文件类型
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $file_tmp);
     finfo_close($finfo);
@@ -1371,44 +1377,44 @@ public function validateUploadedFile($file_tmp, $max_size = 52428800) // 50MB
 ?>
 ```
 
-### SQL Injection Prevention
+### SQL 注入防护
 
-Always use parameterized queries or escape values:
+始终使用参数化查询或转义值：
 
 ```php
 <?php
-// UNSAFE - never do this
+// 不安全 - 切勿这样做
 $sql = "INSERT INTO table VALUES ('".$_POST['ref']."')";
 
-// SAFE - use escape()
+// 安全 - 使用 escape()
 $sql = "INSERT INTO table VALUES ('".$db->escape($ref)."')";
 
-// SAFE - use prepared statements with placeholders
+// 安全 - 使用带占位符的预处理语句
 $sql = "INSERT INTO table VALUES (?)";
 $db->query($sql, array($ref));
 ?>
 ```
 
-### Data Privacy
+### 数据隐私
 
-Implement data protection measures:
+实施数据保护措施：
 
 ```php
 <?php
-// Anonymize sensitive data in exports
+// 匿名化导出中的敏感数据
 public function sanitizeExportData($data)
 {
-    // Mask email addresses
+    // 掩码邮箱地址
     if (isset($data['email'])) {
         $data['email'] = preg_replace('/(.{2}).*(@.*)/', '$1***$2', $data['email']);
     }
     
-    // Mask phone numbers
+    // 掩码电话号码
     if (isset($data['phone'])) {
         $data['phone'] = preg_replace('/(\d{2}).*(\d{2})/', '$1***$2', $data['phone']);
     }
     
-    // Redact sensitive fields
+    // 屏蔽敏感字段
     $sensitive_fields = array('password', 'ssn', 'credit_card');
     foreach ($sensitive_fields as $field) {
         if (isset($data[$field])) {
@@ -1419,7 +1425,7 @@ public function sanitizeExportData($data)
     return $data;
 }
 
-// Log export/import activities for audit trail
+// 记录导出/导入活动以用于审计跟踪
 public function logImportActivity($user_id, $filename, $records_imported, $errors = 0)
 {
     global $db;
@@ -1434,20 +1440,21 @@ public function logImportActivity($user_id, $filename, $records_imported, $error
 
 ---
 
-## Summary
+## 总结
 
-The Dolibarr import/export system provides flexible data integration capabilities:
+Dolibarr 导入/导出系统提供灵活的数据集成能力：
 
-- **Exports**: Built-in module with CSV, TSV, XLS support and field customization
-- **Imports**: Configurable profiles with validation, transformation, and error handling
-- **Performance**: Batch processing, transactions, memory optimization for large datasets
-- **Security**: Permission checks, file validation, SQL injection prevention, audit logging
-- **Reliability**: Validation, error handling, duplicate detection, data sanitization
+- **导出**：内置模块，支持 CSV、TSV、XLS 及字段自定义
+- **导入**：可配置的配置文件，带验证、转换和错误处理
+- **性能**：批处理、事务、大数据集的内存优化
+- **安全**：权限检查、文件验证、SQL 注入防护、审计日志
+- **可靠性**：验证、错误处理、重复检测、数据清洗
 
-For production deployments, always:
-1. Test with sample data first
-2. Implement comprehensive validation
-3. Use transactions for data consistency
-4. Log all import/export activities
-5. Verify data after import
-6. Maintain backups before bulk operations
+对于生产部署，请始终：
+
+1. 先用样本数据测试
+2. 实现全面的验证
+3. 使用事务保证数据一致性
+4. 记录所有导入/导出活动
+5. 导入后验证数据
+6. 批量操作前保留备份

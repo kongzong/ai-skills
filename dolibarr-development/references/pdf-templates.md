@@ -1,49 +1,49 @@
-# PDF/ODT Template Development Guide
+# PDF/ODT 模板开发指南
 
 Source: https://wiki.dolibarr.org/index.php/Create_a_PDF_document_template and https://wiki.dolibarr.org/index.php/Create_an_ODT_document_template
 
 ---
 
-## Overview
+## 概述
 
-Dolibarr supports two primary document template formats for generating professional documents (invoices, proposals, orders, etc.):
+Dolibarr 支持两种主要的文档模板格式，用于生成专业文档（发票、报价单、订单等）：
 
-- **PDF Templates**: Require PHP knowledge, created using TCPDF library, offer maximum customization
-- **ODT Templates**: Do not require PHP knowledge, created with LibreOffice, simpler to create and maintain
+- **PDF 模板**：需要 PHP 知识，使用 TCPDF 库创建，提供最大程度的自定义能力
+- **ODT 模板**：不需要 PHP 知识，使用 LibreOffice 创建，创建和维护更简单
 
-Both approaches follow the Active Record ORM pattern and leverage Dolibarr's substitution system for variable replacement.
+两种方式都遵循 Active Record ORM 模式，并利用 Dolibarr 的占位符系统进行变量替换。
 
 ---
 
-## Template Fundamentals
+## 模板基础
 
-### PDF vs ODT: Key Differences
+### PDF 与 ODT：主要区别
 
-| Aspect | PDF | ODT |
+| 方面 | PDF | ODT |
 |--------|-----|-----|
-| **Technology** | TCPDF library (PHP) | LibreOffice native format |
-| **PHP Knowledge** | Required | Not required |
-| **Customization** | Maximum control over layout | WYSIWYG editing |
-| **Performance** | Generally faster | Slightly slower conversion |
-| **Complexity** | Higher learning curve | More user-friendly |
-| **Use Cases** | Complex custom designs | Standard business documents |
-| **Version Support** | Dolibarr 3.0+ | Dolibarr 3.1+ |
+| **技术** | TCPDF 库（PHP） | LibreOffice 原生格式 |
+| **PHP 知识** | 必需 | 不需要 |
+| **自定义程度** | 最大程度控制布局 | 所见即所得编辑 |
+| **性能** | 通常更快 | 转换稍慢 |
+| **复杂度** | 学习曲线较高 | 更易用 |
+| **使用场景** | 复杂自定义设计 | 标准业务文档 |
+| **版本支持** | Dolibarr 3.0+ | Dolibarr 3.1+ |
 
-### Template File Locations
+### 模板文件位置
 
-All core document templates are located in `htdocs/core/modules/`:
+所有核心文档模板都位于 `htdocs/core/modules/`：
 
 ```
 htdocs/core/modules/
-├── propale/doc/              ← Proposals/Quotations
-├── facture/doc/              ← Invoices
-├── commande/doc/             ← Sales Orders
-├── fournisseur/doc/          ← Supplier Orders
-├── expedition/doc/           ← Shipments
-└── livraison/doc/            ← Delivery Notes
+├── propale/doc/              ← 报价/商业提案
+├── facture/doc/              ← 发票
+├── commande/doc/             ← 销售订单
+├── fournisseur/doc/          ← 供应商订单
+├── expedition/doc/           ← 发货单
+└── livraison/doc/            ← 送货单
 ```
 
-Custom module templates should be placed in:
+自定义模块模板应放在：
 
 ```
 htdocs/custom/mymodule/core/modules/
@@ -52,44 +52,44 @@ htdocs/custom/mymodule/core/modules/
 └── [document-type]/doc/
 ```
 
-### Template Naming Conventions
+### 模板命名规范
 
-- **PDF Templates**: `pdf_[modelname].modules.php`
-- **ODT Templates**: `doc_[modelname]_odt.class.php`
+- **PDF 模板**：`pdf_[modelname].modules.php`
+- **ODT 模板**：`doc_[modelname]_odt.class.php`
 
-Example: `pdf_mycompanyblue.modules.php` for a custom PDF model named "mycompanyblue"
+示例：`pdf_mycompanyblue.modules.php` 用于名为 "mycompanyblue" 的自定义 PDF 模型
 
 ---
 
-## PDF Template Development
+## PDF 模板开发
 
-### Step 1: Choose a Base Template
+### 第 1 步：选择基础模板
 
-Review existing templates in the module setup area to find one closest to your requirements:
+在模块设置区域查看现有模板，找到最接近你需求的一个：
 
-**Recommended Core Models (v12+)**:
-- Proposals: `cyan`
-- Invoices: `sponge`
-- Orders: `eratosthene`
-- Supplier Orders: `cornas`
-- Shipments: `storm`
-- Delivery: `espadon`
+**推荐的核心模型（v12+）**：
+- 报价单：`cyan`
+- 发票：`sponge`
+- 订单：`eratosthene`
+- 供应商订单：`cornas`
+- 发货单：`storm`
+- 送货单：`espadon`
 
-### Step 2: Copy and Rename Template
+### 第 2 步：复制并重命名模板
 
 ```bash
-# Copy base template
+# 复制基础模板
 cp htdocs/core/modules/propale/doc/pdf_cyan.modules.php \
    htdocs/custom/mymodule/core/modules/propale/doc/pdf_mycompanyblue.modules.php
 ```
 
-### Step 3: Update Class Definition
+### 第 3 步：更新类定义
 
-Edit the copied file and modify the class declaration:
+编辑复制的文件，修改类声明：
 
 ```php
 <?php
-// BEFORE
+// 修改前
 class pdf_cyan extends ModelePDFPropales
 {
     public function __construct($db)
@@ -99,23 +99,23 @@ class pdf_cyan extends ModelePDFPropales
     }
 }
 
-// AFTER
+// 修改后
 class pdf_mycompanyblue extends ModelePDFPropales
 {
     public function __construct($db)
     {
         parent::__construct($db);
         $this->name = "mycompanyblue";
-        // Translate the description in your language file
+        // 在你的语言文件中翻译描述
         $this->description = $langs->trans('DocModelMycompanyblueDescription');
     }
 }
 ?>
 ```
 
-### Step 4: Modify Module Descriptor
+### 第 4 步：修改模块描述符
 
-Update `htdocs/custom/mymodule/core/modules/modMymodule.class.php`:
+更新 `htdocs/custom/mymodule/core/modules/modMymodule.class.php`：
 
 ```php
 <?php
@@ -123,33 +123,33 @@ class modMymodule extends DolibarrModules
 {
     public function __construct($db)
     {
-        // ... other properties ...
+        // ... 其他属性 ...
         
-        // Enable document models
+        // 启用文档模型
         $this->module_parts = array(
-            'models' => 1,  // Changed from 0 to 1
+            'models' => 1,  // 从 0 改为 1
         );
     }
 }
 ?>
 ```
 
-### Step 5: Activate and Test
+### 第 5 步：激活并测试
 
-1. Navigate to **Home > Setup > Modules**
-2. Enable your custom module
-3. Test the model in module configuration
-4. Optionally set as default model
+1. 导航到 **首页 > 设置 > 模块**
+2. 启用你的自定义模块
+3. 在模块配置中测试模型
+4. 可选地将其设为默认模型
 
 ---
 
-## PDF Customization: Core Methods
+## PDF 自定义：核心方法
 
-The main PHP file contains these key methods:
+主 PHP 文件包含以下关键方法：
 
-### 1. Header Function: `_pagehead()`
+### 1. 页头函数 `_pagehead()`
 
-Manages document header including logo, title, dates, and company/customer information.
+管理文档页头，包括 logo、标题、日期以及公司/客户信息。
 
 ```php
 <?php
@@ -157,27 +157,27 @@ private function _pagehead(&$pdf, $object, $showaddress, $outputlangs)
 {
     global $conf, $mysoc;
     
-    // Set font for header
+    // 设置页头字体
     $pdf->SetFont('Arial', 'B', 14);
     $pdf->SetXY(10, 10);
     
-    // Add company logo
+    // 添加公司 logo
     if (!empty($mysoc->logo_small) && is_file($conf->mycompany->dir_output . '/logos/' . $mysoc->logo_small)) {
         $pdf->Image(
             $conf->mycompany->dir_output . '/logos/' . $mysoc->logo_small,
-            10,      // X position
-            8,       // Y position
-            60       // Width (height auto-adjusts)
+            10,      // X 坐标
+            8,       // Y 坐标
+            60       // 宽度（高度自动调整）
         );
     }
     
-    // Add title
+    // 添加标题
     $pdf->SetXY(80, 20);
     $pdf->SetFont('Arial', 'B', 16);
     $title = $outputlangs->transnoentities('Proposal');
     $pdf->MultiCell(100, 10, $title, 0, 'L');
     
-    // Add reference and date
+    // 添加编号和日期
     $pdf->SetXY(80, 35);
     $pdf->SetFont('Arial', '', 10);
     $pdf->MultiCell(100, 5, 
@@ -189,9 +189,9 @@ private function _pagehead(&$pdf, $object, $showaddress, $outputlangs)
 ?>
 ```
 
-### 2. Body Function: `_tableau()`
+### 2. 主体函数 `_tableau()`
 
-Displays the items table (products, services, line items).
+显示明细表格（产品、服务、明细行）。
 
 ```php
 <?php
@@ -199,7 +199,7 @@ private function _tableau(&$pdf, $object, $outputlangs)
 {
     global $conf;
     
-    // Table headers
+    // 表头
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->SetFillColor(200, 200, 200);
     $pdf->SetXY(10, 60);
@@ -212,17 +212,17 @@ private function _tableau(&$pdf, $object, $outputlangs)
     $pdf->SetXY(130, 60);
     $pdf->MultiCell(30, 6, $outputlangs->transnoentities('Total'), 1, 'R', true);
     
-    // Table content
+    // 表格内容
     $pdf->SetFont('Arial', '', 9);
     $pdf->SetFillColor(255, 255, 255);
     $y = 67;
     
     foreach ($object->lines as $line) {
         if ($y > 250) {
-            // Handle page breaks
+            // 处理分页
             $pdf->AddPage();
             $y = 10;
-            // Redraw headers on new page
+            // 在新页重绘表头
         }
         
         $pdf->SetXY(10, $y);
@@ -240,18 +240,18 @@ private function _tableau(&$pdf, $object, $outputlangs)
 ?>
 ```
 
-### 3. Totals Function: `_tableau_tot()`
+### 3. 合计函数 `_tableau_tot()`
 
-Displays subtotal, tax, and total amounts.
+显示小计、税额和总金额。
 
 ```php
 <?php
 private function _tableau_tot(&$pdf, $object, $outputlangs)
 {
     $pdf->SetFont('Arial', 'B', 10);
-    $y = 200; // Adjust based on your layout
+    $y = 200; // 根据你的布局调整
     
-    // Subtotal
+    // 小计
     $pdf->SetXY(100, $y);
     $pdf->MultiCell(30, 6, $outputlangs->transnoentities('HT'), 1, 'L');
     $pdf->SetXY(130, $y);
@@ -259,7 +259,7 @@ private function _tableau_tot(&$pdf, $object, $outputlangs)
     
     $y += 6;
     
-    // VAT
+    // 增值税
     $pdf->SetXY(100, $y);
     $pdf->MultiCell(30, 6, $outputlangs->transnoentities('VAT'), 1, 'L');
     $pdf->SetXY(130, $y);
@@ -267,7 +267,7 @@ private function _tableau_tot(&$pdf, $object, $outputlangs)
     
     $y += 6;
     
-    // Total
+    // 总计
     $pdf->SetFont('Arial', 'B', 12);
     $pdf->SetFillColor(220, 220, 220);
     $pdf->SetXY(100, $y);
@@ -278,9 +278,9 @@ private function _tableau_tot(&$pdf, $object, $outputlangs)
 ?>
 ```
 
-### 4. Footer Function: `_pagefoot()`
+### 4. 页脚函数 `_pagefoot()`
 
-Adds company information, payment terms, and legal notes at page bottom.
+在页面底部添加公司信息、付款条款和法律说明。
 
 ```php
 <?php
@@ -288,24 +288,24 @@ private function _pagefoot(&$pdf, $object, $outputlangs)
 {
     global $conf, $mysoc;
     
-    // Set position at bottom
+    // 设置位置在底部
     $pdf->SetY(-40);
     $pdf->SetFont('Arial', '', 8);
     $pdf->SetTextColor(100, 100, 100);
     
-    // Legal footer
+    // 法律页脚
     $footer_text = '';
     if (!empty($mysoc->note_public)) {
         $footer_text .= $mysoc->note_public . "\n";
     }
     
-    // Payment terms
+    // 付款条款
     if ($object->cond_reglement_id > 0) {
         $footer_text .= $outputlangs->transnoentities('PaymentTerms') . ': ' . 
                        $object->getPaymentTermsLabel($outputlangs) . "\n";
     }
     
-    // Bank information
+    // 银行信息
     if (!empty($conf->global->BANK_DETAILS_IN_DOCUMENTS)) {
         $footer_text .= "Bank: " . $object->getBank($outputlangs);
     }
@@ -317,82 +317,82 @@ private function _pagefoot(&$pdf, $object, $outputlangs)
 
 ---
 
-## TCPDF Common Methods Reference
+## TCPDF 常用方法参考
 
-### Text and Positioning
+### 文本与定位
 
 ```php
 <?php
-// Set text position
+// 设置文本位置
 $pdf->SetXY(float $x, float $y);
 $pdf->SetX(float $x);
 $pdf->SetY(float $y);
 
-// Get current position
+// 获取当前位置
 $currentY = $pdf->GetY();
 $currentX = $pdf->GetX();
 
-// Write text box (with automatic line wrapping)
+// 写入文本框（自动换行）
 $pdf->MultiCell(
-    float $width,           // Box width
-    float $height,          // Line height
-    string $text,           // Text content
-    mixed $border = 0,      // Border: 0, 1, 'LTRB', 'T'
-    string $align = 'L',    // L (left), C (center), R (right), J (justify)
-    bool $fill = false      // Fill background with color
+    float $width,           // 框宽度
+    float $height,          // 行高
+    string $text,           // 文本内容
+    mixed $border = 0,      // 边框：0、1、'LTRB'、'T'
+    string $align = 'L',    // L（左）、C（中）、R（右）、J（两端对齐）
+    bool $fill = false      // 用颜色填充背景
 );
 
-// Write single line (no wrapping)
+// 写入单行（不换行）
 $pdf->Cell(float $width, float $height, string $text);
 ?>
 ```
 
-### Styling
+### 样式
 
 ```php
 <?php
-// Set font
+// 设置字体
 $pdf->SetFont(
-    string $family = 'Arial',     // Arial, Times, Courier, DejaVuSans, etc.
-    string $style = '',            // '' (regular), 'B' (bold), 'I' (italic), 'BI'
-    float $size = 12               // Font size in points
+    string $family = 'Arial',     // Arial、Times、Courier、DejaVuSans 等
+    string $style = '',            // ''（常规）、'B'（粗体）、'I'（斜体）、'BI'
+    float $size = 12               // 字号（以磅为单位）
 );
 
-// Set text color (RGB)
+// 设置文本颜色（RGB）
 $pdf->SetTextColor(int $red, int $green, int $blue);
 
-// Set fill color (for backgrounds)
+// 设置填充颜色（用于背景）
 $pdf->SetFillColor(int $red, int $green, int $blue);
 
-// Set draw color (for lines/borders)
+// 设置描边颜色（用于线条/边框）
 $pdf->SetDrawColor(int $red, int $green, int $blue);
 
-// Draw rectangle
+// 绘制矩形
 $pdf->Rect(
     float $x,
     float $y,
     float $width,
     float $height,
-    string $style = ''  // '' (outline), 'F' (filled), 'FD' (filled + outline)
+    string $style = ''  // ''（描边）、'F'（填充）、'FD'（填充 + 描边）
 );
 ?>
 ```
 
-### Images and Media
+### 图片与媒体
 
 ```php
 <?php
-// Insert image
+// 插入图片
 $pdf->Image(
-    string $file,           // Full file path
+    string $file,           // 完整文件路径
     float $x,
     float $y,
-    float $width = 0,       // 0 = auto-calculate
-    float $height = 0,      // 0 = auto-calculate
-    string $type = ''       // 'JPG', 'PNG', 'GIF', etc. (auto-detect if empty)
+    float $width = 0,       // 0 = 自动计算
+    float $height = 0,      // 0 = 自动计算
+    string $type = ''       // 'JPG'、'PNG'、'GIF' 等（为空时自动检测）
 );
 
-// Add PDF annotation (comment)
+// 添加 PDF 注释（批注）
 $pdf->Annotation(
     float $x,
     float $y,
@@ -404,127 +404,127 @@ $pdf->Annotation(
 ?>
 ```
 
-### Page Management
+### 页面管理
 
 ```php
 <?php
-// Add new page
+// 添加新页面
 $pdf->AddPage();
 
-// Set page orientation ('P' for portrait, 'L' for landscape)
+// 设置页面方向（'P' 纵向，'L' 横向）
 $pdf->AddPage('P');
 
-// Get page count
+// 获取页数
 $totalPages = $pdf->getPage();
 ?>
 ```
 
 ---
 
-## Variable Substitution in PDF Templates
+## PDF 模板中的变量替换
 
-Access object properties and global variables within your PHP template:
+在你的 PHP 模板中访问对象属性和全局变量：
 
-### Main Object Properties
+### 主要对象属性
 
 ```php
 <?php
-// Document reference and metadata
-echo $object->ref;                    // Document reference number
-echo $object->id;                     // Document ID
-echo $object->date;                   // Creation date (timestamp)
-echo $object->date_delivery;          // Delivery/due date
-echo dol_print_date($object->date, 'day', '', $outputlangs);  // Formatted date
+// 文档编号和元数据
+echo $object->ref;                    // 文档编号
+echo $object->id;                     // 文档 ID
+echo $object->date;                   // 创建日期（时间戳）
+echo $object->date_delivery;          // 交付/到期日期
+echo dol_print_date($object->date, 'day', '', $outputlangs);  // 格式化日期
 
-// Amounts
-echo price($object->total_ht);        // Subtotal (ex-tax)
-echo price($object->total_vat);       // Total VAT
-echo price($object->total_ttc);       // Total (inc-tax)
+// 金额
+echo price($object->total_ht);        // 小计（不含税）
+echo price($object->total_vat);       // 增值税总额
+echo price($object->total_ttc);       // 总计（含税）
 
-// Status and state
-echo $object->statut;                 // Status ID
-echo $object->getLibStatut();         // Status label
+// 状态
+echo $object->statut;                 // 状态 ID
+echo $object->getLibStatut();         // 状态标签
 
-// Notes
-echo $object->note_private;           // Private note
-echo $object->note_public;            // Public note
+// 备注
+echo $object->note_private;           // 私有备注
+echo $object->note_public;            // 公开备注
 
-// Related object references
+// 关联对象引用
 foreach ($object->lines as $line) {
-    echo $line->desc;                 // Line description
-    echo $line->qty;                  // Quantity
-    echo $line->subprice;             // Unit price
-    echo $line->total_ht;             // Line total (ex-tax)
+    echo $line->desc;                 // 行描述
+    echo $line->qty;                  // 数量
+    echo $line->subprice;             // 单价
+    echo $line->total_ht;             // 行总计（不含税）
 }
 ?>
 ```
 
-### Company Information
+### 公司信息
 
 ```php
 <?php
-global $mysoc;  // Current company (my company)
+global $mysoc;  // 当前公司（本公司）
 
-echo $mysoc->name;                    // Company name
-echo $mysoc->address;                 // Address
-echo $mysoc->zip;                     // Postal code
-echo $mysoc->town;                    // City
-echo $mysoc->phone;                   // Phone number
-echo $mysoc->email;                   // Email address
-echo $mysoc->vatnumber;               // VAT number
+echo $mysoc->name;                    // 公司名称
+echo $mysoc->address;                 // 地址
+echo $mysoc->zip;                     // 邮编
+echo $mysoc->town;                    // 城市
+echo $mysoc->phone;                   // 电话号码
+echo $mysoc->email;                   // 邮箱地址
+echo $mysoc->vatnumber;               // 增值税号
 ?>
 ```
 
-### Third-party (Customer/Supplier) Information
+### 第三方（客户/供应商）信息
 
 ```php
 <?php
 if ($object->thirdparty) {
     $thirdparty = $object->thirdparty;
     
-    echo $thirdparty->name;            // Company name
-    echo $thirdparty->address;         // Address
-    echo $thirdparty->phone;           // Phone
-    echo $thirdparty->email;           // Email
-    echo $thirdparty->code_client;     // Customer code
-    echo $thirdparty->code_fournisseur;// Supplier code
-    echo $thirdparty->vatnumber;       // VAT number
+    echo $thirdparty->name;            // 公司名称
+    echo $thirdparty->address;         // 地址
+    echo $thirdparty->phone;           // 电话
+    echo $thirdparty->email;           // 邮箱
+    echo $thirdparty->code_client;     // 客户代码
+    echo $thirdparty->code_fournisseur;// 供应商代码
+    echo $thirdparty->vatnumber;       // 增值税号
 }
 ?>
 ```
 
-### User and Configuration
+### 用户与配置
 
 ```php
 <?php
 global $user, $conf;
 
-// Current user
-echo $user->firstname;                // First name
-echo $user->lastname;                 // Last name
-echo $user->email;                    // Email
+// 当前用户
+echo $user->firstname;                // 名
+echo $user->lastname;                 // 姓
+echo $user->email;                    // 邮箱
 
-// Configuration
-echo $conf->global->MAIN_INFO_SOCIETE_COUNTRY;  // Company country code
-echo $conf->currency_code;            // Currency code (EUR, USD, etc.)
+// 配置
+echo $conf->global->MAIN_INFO_SOCIETE_COUNTRY;  // 公司国家代码
+echo $conf->currency_code;            // 货币代码（EUR、USD 等）
 ?>
 ```
 
 ---
 
-## Conditional Logic in PDF Templates
+## PDF 模板中的条件逻辑
 
 ```php
 <?php
-// Simple conditional
+// 简单条件判断
 if ($object->total_discount > 0) {
     $pdf->SetXY(100, $y);
     $pdf->SetTextColor(200, 0, 0);
     $pdf->MultiCell(30, 6, $outputlangs->transnoentities('Discount'));
-    $pdf->SetTextColor(0, 0, 0);  // Reset color
+    $pdf->SetTextColor(0, 0, 0);  // 重置颜色
 }
 
-// Conditional with alternative
+// 带 else 分支的条件判断
 if (!empty($object->note_public)) {
     $pdf->SetXY(10, 100);
     $pdf->SetFont('Arial', 'I', 9);
@@ -535,7 +535,7 @@ if (!empty($object->note_public)) {
     $pdf->MultiCell(190, 5, 'No additional notes');
 }
 
-// Conditional with status check
+// 带状态检查的条件判断
 if ($object->statut == Facture::STATUS_PAID) {
     $pdf->SetXY(10, 50);
     $pdf->SetTextColor(0, 150, 0);
@@ -548,205 +548,205 @@ if ($object->statut == Facture::STATUS_PAID) {
 
 ---
 
-## ODT Template Development
+## ODT 模板开发
 
-### Step 1: Choose Template Format
+### 第 1 步：选择模板格式
 
-Select either:
-- **ODT** (Document Writer format) - for text documents, invoices, proposals
-- **ODS** (Spreadsheet format) - for tabular data, reports
+选择其一：
+- **ODT**（文档编辑器格式）- 用于文本文档、发票、报价单
+- **ODS**（电子表格格式）- 用于表格数据、报表
 
-You may find example templates in `documents/doctemplates/`
+你可以在 `documents/doctemplates/` 中找到示例模板
 
-### Step 2: Create Your Document
+### 第 2 步：创建文档
 
-1. Open LibreOffice Writer or Calc
-2. Create your document layout using full WYSIWYG capabilities
-3. Design your template structure before adding substitution tags
-4. Include all static content (headers, branding, footer text)
+1. 打开 LibreOffice Writer 或 Calc
+2. 使用完整的所见即所得功能创建文档布局
+3. 在添加占位符标签之前设计好模板结构
+4. 包含所有静态内容（页头、品牌标识、页脚文本）
 
-### Step 3: Add Substitution Tags
+### 第 3 步：添加占位符标签
 
-Insert placeholder tags that will be replaced during document generation.
+插入在文档生成时会被替换的占位符标签。
 
-**Critical Rules for Tags**:
-- Must be surrounded by `{}` for simple variables or `[]` for arrays
-- Type tags manually (no copy-paste from elsewhere)
-- Do NOT use backspace after typing
-- Use `Ctrl+M` in LibreOffice to remove direct formatting from tags
-- Avoid adding extra spaces or line breaks after tags
+**标签的关键规则**：
+- 简单变量必须用 `{}` 包围，数组用 `[]` 包围
+- 手动输入标签（不要从别处复制粘贴）
+- 输入后不要使用退格键
+- 在 LibreOffice 中使用 `Ctrl+M` 清除标签上的直接格式
+- 避免在标签后添加多余的空格或换行
 
-### Step 4: Upload Template
+### 第 4 步：上传模板
 
-Navigate to **Home > Setup > Modules > [DocumentType] Setup > ODT/ODS Template** section and upload your template file.
+导航到 **首页 > 设置 > 模块 > [文档类型] 设置 > ODT/ODS 模板** 部分，上传你的模板文件。
 
-Alternatively, place the file manually in `documents/doctemplates/[objecttype]/` directory.
-
----
-
-## ODT Substitution Variables Reference
-
-### Company Information
-
-```
-{mycompany_logo}                    : Company logo image
-{mycompany_name}                    : Company name
-{mycompany_address}                 : Full address
-{mycompany_zip}                     : Postal code
-{mycompany_town}                    : City
-{mycompany_country}                 : Country name
-{mycompany_country_code}            : Country code (FR, US, IT)
-{mycompany_phone}                   : Phone number
-{mycompany_fax}                     : Fax number
-{mycompany_email}                   : Email address
-{mycompany_web}                     : Website URL
-{mycompany_vatnumber}               : VAT number
-{mycompany_juridicalstatus}         : Legal status
-{mycompany_capital}                 : Share capital
-```
-
-### Customer/Supplier Information
-
-```
-{company_name}                      : Third-party company name
-{company_address}                   : Address
-{company_zip}                       : Postal code
-{company_town}                      : City
-{company_country}                   : Country name
-{company_country_code}              : Country code
-{company_phone}                     : Phone number
-{company_email}                     : Email address
-{company_customercode}              : Customer code
-{company_suppliercode}              : Supplier code
-{company_vatnumber}                 : VAT number
-{company_note_public}               : Public notes
-{company_note_private}              : Private notes
-```
-
-### Contact Information
-
-```
-{contact_civility}                  : Title (Mr., Ms., etc.)
-{contact_fullname}                  : Full name
-{contact_firstname}                 : First name
-{contact_lastname}                  : Last name
-{contact_address}                   : Address
-{contact_phone_pro}                 : Professional phone
-{contact_email}                     : Email address
-{contact_birthday}                  : Birth date
-{contact_default_lang}              : Preferred language
-{contact_options_xxx}               : Extra field value (xxx = field code)
-```
-
-### Document/Object Variables
-
-```
-{object_id}                         : Document ID
-{object_ref}                        : Reference number
-{object_ref_customer}               : Customer reference
-{object_date}                       : Document date
-{object_date_creation}              : Creation date
-{object_date_limit}                 : Due date (invoices)
-{object_date_end}                   : End date (proposals)
-{object_note_public}                : Public notes
-{object_note_private}               : Private notes
-```
-
-### Amount Variables
-
-```
-{object_total_ht}                   : Subtotal (ex-tax)
-{object_total_vat}                  : Total VAT
-{object_total_ttc}                  : Total (inc-tax)
-{object_total_discount_ht}          : Discount amount
-{object_total_ht_locale}            : Subtotal (localized format)
-{object_total_vat_locale}           : VAT (localized format)
-{object_total_ttc_locale}           : Total (localized format)
-{object_total_vat_x}                : VAT total for rate x (e.g., 20, 5.5)
-```
-
-### Line Item Variables
-
-Use within `[!-- BEGIN row.lines --]` and `[!-- END row.lines --]` tags:
-
-```
-{line_pos}                          : Line position/number
-{line_desc}                         : Line description
-{line_product_ref}                  : Product reference
-{line_product_label}                : Product name/label
-{line_qty}                          : Quantity
-{line_up}                           : Unit price (ex-tax)
-{line_up_locale}                    : Unit price (localized)
-{line_price_ht}                     : Line total (ex-tax)
-{line_price_ht_locale}              : Line total (localized)
-{line_price_vat}                    : Line VAT
-{line_price_ttc}                    : Line total (inc-tax)
-{line_vatrate}                      : VAT rate percentage
-{line_discount_percent}             : Discount percentage
-{line_options_xxx}                  : Extra field value (xxx = field code)
-```
-
-### Other Variables
-
-```
-{current_date}                      : Current date
-{current_datehour}                  : Current date and time
-{current_date_locale}               : Current date (localized format)
-{myuser_firstname}                  : Current user first name
-{myuser_lastname}                   : Current user last name
-{myuser_email}                      : Current user email
-{__(key)__}                         : Translation of language key
-{__[CONST_NAME]__}                  : Value of configuration constant
-```
+或者，手动将文件放到 `documents/doctemplates/[objecttype]/` 目录中。
 
 ---
 
-## Conditional Display in ODT Templates
+## ODT 占位符变量参考
 
-### Basic IF/ELSE Syntax
+### 公司信息
+
+```
+{mycompany_logo}                    : 公司 logo 图片
+{mycompany_name}                    : 公司名称
+{mycompany_address}                 : 完整地址
+{mycompany_zip}                     : 邮编
+{mycompany_town}                    : 城市
+{mycompany_country}                 : 国家名称
+{mycompany_country_code}            : 国家代码（FR、US、IT）
+{mycompany_phone}                   : 电话号码
+{mycompany_fax}                     : 传真号码
+{mycompany_email}                   : 邮箱地址
+{mycompany_web}                     : 网站 URL
+{mycompany_vatnumber}               : 增值税号
+{mycompany_juridicalstatus}         : 法律状态
+{mycompany_capital}                 : 注册资本
+```
+
+### 客户/供应商信息
+
+```
+{company_name}                      : 第三方公司名称
+{company_address}                   : 地址
+{company_zip}                       : 邮编
+{company_town}                      : 城市
+{company_country}                   : 国家名称
+{company_country_code}              : 国家代码
+{company_phone}                     : 电话号码
+{company_email}                     : 邮箱地址
+{company_customercode}              : 客户代码
+{company_suppliercode}              : 供应商代码
+{company_vatnumber}                 : 增值税号
+{company_note_public}               : 公开备注
+{company_note_private}              : 私有备注
+```
+
+### 联系人信息
+
+```
+{contact_civility}                  : 称谓（先生、女士等）
+{contact_fullname}                  : 全名
+{contact_firstname}                 : 名
+{contact_lastname}                  : 姓
+{contact_address}                   : 地址
+{contact_phone_pro}                 : 工作电话
+{contact_email}                     : 邮箱地址
+{contact_birthday}                  : 出生日期
+{contact_default_lang}              : 首选语言
+{contact_options_xxx}               : 额外字段值（xxx = 字段代码）
+```
+
+### 文档/对象变量
+
+```
+{object_id}                         : 文档 ID
+{object_ref}                        : 编号
+{object_ref_customer}               : 客户参考号
+{object_date}                       : 文档日期
+{object_date_creation}              : 创建日期
+{object_date_limit}                 : 到期日期（发票）
+{object_date_end}                   : 结束日期（报价单）
+{object_note_public}                : 公开备注
+{object_note_private}               : 私有备注
+```
+
+### 金额变量
+
+```
+{object_total_ht}                   : 小计（不含税）
+{object_total_vat}                  : 增值税总额
+{object_total_ttc}                  : 总计（含税）
+{object_total_discount_ht}          : 折扣金额
+{object_total_ht_locale}            : 小计（本地化格式）
+{object_total_vat_locale}           : 增值税（本地化格式）
+{object_total_ttc_locale}           : 总计（本地化格式）
+{object_total_vat_x}                : 税率 x 的增值税总额（如 20、5.5）
+```
+
+### 明细行变量
+
+在 `[!-- BEGIN row.lines --]` 和 `[!-- END row.lines --]` 标签内使用：
+
+```
+{line_pos}                          : 行位置/序号
+{line_desc}                         : 行描述
+{line_product_ref}                  : 产品参考号
+{line_product_label}                : 产品名称/标签
+{line_qty}                          : 数量
+{line_up}                           : 单价（不含税）
+{line_up_locale}                    : 单价（本地化格式）
+{line_price_ht}                     : 行总计（不含税）
+{line_price_ht_locale}              : 行总计（本地化格式）
+{line_price_vat}                    : 行增值税
+{line_price_ttc}                    : 行总计（含税）
+{line_vatrate}                      : 增值税率百分比
+{line_discount_percent}             : 折扣百分比
+{line_options_xxx}                  : 额外字段值（xxx = 字段代码）
+```
+
+### 其他变量
+
+```
+{current_date}                      : 当前日期
+{current_datehour}                  : 当前日期和时间
+{current_date_locale}               : 当前日期（本地化格式）
+{myuser_firstname}                  : 当前用户名
+{myuser_lastname}                   : 当前用户姓
+{myuser_email}                      : 当前用户邮箱
+{__(key)__}                         : 语言键的翻译
+{__[CONST_NAME]__}                  : 配置常量的值
+```
+
+---
+
+## ODT 模板中的条件显示
+
+### 基本 IF/ELSE 语法
 
 ```
 [!-- IF {variable} --]
-Display this content if variable has a value
+如果变量有值则显示此内容
 [!-- ENDIF {variable} --]
 ```
 
-### IF/ELSE/ENDIF Structure
+### IF/ELSE/ENDIF 结构
 
 ```
 [!-- IF {object_total_discount_ht} --]
-Total Discount: {object_total_discount_ht_locale}
+总折扣：{object_total_discount_ht_locale}
 [!-- ELSE {object_total_discount_ht} --]
-No discount applied
+未应用折扣
 [!-- ENDIF {object_total_discount_ht} --]
 ```
 
-### Conditional with Complex Content
+### 带复杂内容的条件
 
 ```
 [!-- IF {company_note_public} --]
-Special Notes from Customer:
+客户的特别说明：
 {company_note_public}
 
 ---
 [!-- ELSE {company_note_public} --]
-No special notes provided.
+未提供特别说明。
 [!-- ENDIF {company_note_public} --]
 ```
 
-**Important**: When entering conditional tags:
-1. Type tags manually, do not copy-paste
-2. Leave exactly one space after `[!--`, before variable, and before `--]`
-3. Remove direct formatting with `Ctrl+M` after typing
-4. Do not use backspace while entering tags
+**重要**：输入条件标签时：
+1. 手动输入标签，不要复制粘贴
+2. 在 `[!--` 后、变量前以及 `--]` 前各留恰好一个空格
+3. 输入后用 `Ctrl+M` 清除直接格式
+4. 输入标签时不要使用退格键
 
 ---
 
-## Line Item Loops in ODT Templates
+## ODT 模板中的明细行循环
 
-### Table-based Lines
+### 基于表格的明细行
 
-Use `row.lines` for displaying items in a table:
+使用 `row.lines` 在表格中显示明细：
 
 ```
 [!-- BEGIN row.lines --]
@@ -754,26 +754,26 @@ Use `row.lines` for displaying items in a table:
 [!-- END row.lines --]
 ```
 
-LibreOffice automatically repeats the table row for each line item.
+LibreOffice 会自动为每个明细行重复表格行。
 
-### Block-based Lines
+### 基于块的明细行
 
-Use `lines` for displaying items as separate blocks:
+使用 `lines` 将明细显示为独立的块：
 
 ```
 [!-- BEGIN lines --]
-Item {line_pos}: {line_product_label}
-Description: {line_desc}
-Quantity: {line_qty} × {line_up_locale} = {line_price_ttc_locale}
+项目 {line_pos}: {line_product_label}
+描述: {line_desc}
+数量: {line_qty} × {line_up_locale} = {line_price_ttc_locale}
 
 [!-- END lines --]
 ```
 
 ---
 
-## Advanced PDF Features
+## PDF 高级特性
 
-### Custom Headers with Page Numbers
+### 带页码的自定义页头
 
 ```php
 <?php
@@ -784,7 +784,7 @@ private function addPageNumber(&$pdf, $currentPage, $totalPages)
     $pdf->MultiCell(20, 10, 'Page ' . $currentPage . '/' . $totalPages, 0, 'R');
 }
 
-// In main write_file() method:
+// 在 write_file() 主方法中：
 for ($i = 0; $i < $numberOfPages; $i++) {
     $pdf->AddPage();
     $this->addPageNumber($pdf, $i + 1, $numberOfPages);
@@ -792,17 +792,17 @@ for ($i = 0; $i < $numberOfPages; $i++) {
 ?>
 ```
 
-### Dynamic Conditional Styling
+### 动态条件样式
 
 ```php
 <?php
-// Apply different styles based on object status
+// 根据对象状态应用不同样式
 if ($object->statut == Facture::STATUS_DRAFT) {
-    $pdf->SetFillColor(255, 255, 200);  // Light yellow for draft
+    $pdf->SetFillColor(255, 255, 200);  // 草稿用浅黄色
 } elseif ($object->statut == Facture::STATUS_PAID) {
-    $pdf->SetFillColor(200, 255, 200);  // Light green for paid
+    $pdf->SetFillColor(200, 255, 200);  // 已付款用浅绿色
 } else {
-    $pdf->SetFillColor(255, 200, 200);  // Light red for unpaid
+    $pdf->SetFillColor(255, 200, 200);  // 未付款用浅红色
 }
 
 $pdf->SetXY(10, 50);
@@ -810,13 +810,13 @@ $pdf->MultiCell(190, 20, $object->getLibStatut(), 1, 'C', true);
 ?>
 ```
 
-### Extra Fields Integration
+### 额外字段集成
 
-Access custom fields (extrafields) in templates:
+在模板中访问自定义字段（extrafields）：
 
 ```php
 <?php
-// Fetch extrafields for the object
+// 获取对象的额外字段
 if (is_array($object->array_options)) {
     foreach ($object->array_options as $key => $value) {
         if (strpos($key, 'options_') === 0) {
@@ -832,55 +832,55 @@ if (is_array($object->array_options)) {
 
 ---
 
-## ODT Advanced Features
+## ODT 高级特性
 
-### Conditional Table Rows
+### 条件表格行
 
-Show/hide table rows based on conditions:
+根据条件显示/隐藏表格行：
 
 ```
 [!-- IF {object_total_discount_ht} --]
-| Discount | {object_total_discount_ht_locale} |
+| 折扣 | {object_total_discount_ht_locale} |
 [!-- ENDIF {object_total_discount_ht} --]
 
 [!-- IF {object_total_localtax1} --]
-| Local Tax 1 | {object_total_localtax1_locale} |
+| 地方税 1 | {object_total_localtax1_locale} |
 [!-- ENDIF {object_total_localtax1} --]
 ```
 
-### Multiple Array Sections
+### 多个数组区块
 
-Project documents can use multiple array sections:
+项目文档可以使用多个数组区块：
 
 ```
 [!-- BEGIN projectcontacts --]
-Contact: {contact_fullname} - {contact_email}
+联系人: {contact_fullname} - {contact_email}
 [!-- END projectcontacts --]
 
 [!-- BEGIN projectfiles --]
-Attached File: {file_name}
+附件文件: {file_name}
 [!-- END projectfiles --]
 
 [!-- BEGIN tasks --]
-Task: {tasktime_note}
+任务: {tasktime_note}
 [!-- END tasks --]
 ```
 
-### Custom Substitutions via Module
+### 通过模块实现自定义占位符
 
-Extend available variables by creating a module:
+通过创建模块来扩展可用变量：
 
-**File**: `htdocs/mymodule/core/substitutions/functions_mymodule.lib.php`
+**文件**：`htdocs/mymodule/core/substitutions/functions_mymodule.lib.php`
 
 ```php
 <?php
 /**
- * Add custom substitution variables for ODT/PDF templates
+ * 为 ODT/PDF 模板添加自定义占位符变量
  *
- * @param array $substitutionarray  Key-value pairs for replacement
- * @param Translate $langs         Language object
- * @param Object $object           Document object
- * @return void (modifies $substitutionarray by reference)
+ * @param array $substitutionarray  用于替换的键值对
+ * @param Translate $langs         语言对象
+ * @param Object $object           文档对象
+ * @return void（通过引用修改 $substitutionarray）
  */
 function mymodule_completesubstitutionarray(
     &$substitutionarray,
@@ -889,11 +889,11 @@ function mymodule_completesubstitutionarray(
 ) {
     global $conf, $db;
     
-    // Add custom business logic
+    // 添加自定义业务逻辑
     $customValue = getCustomCalculation($object);
     $substitutionarray['my_custom_tag'] = $customValue;
     
-    // Add dynamically calculated field
+    // 添加动态计算的字段
     if (!empty($object->lines)) {
         $itemCount = count($object->lines);
         $substitutionarray['my_line_count'] = $itemCount;
@@ -901,13 +901,13 @@ function mymodule_completesubstitutionarray(
 }
 
 /**
- * Add custom substitution variables for line items
+ * 为明细行添加自定义占位符变量
  *
- * @param array $substitutionarray  Key-value pairs for replacement
- * @param Translate $langs         Language object
- * @param Object $object           Document object
- * @param Object $line             Current line being processed
- * @return void (modifies $substitutionarray by reference)
+ * @param array $substitutionarray  用于替换的键值对
+ * @param Translate $langs         语言对象
+ * @param Object $object           文档对象
+ * @param Object $line             当前正在处理的行
+ * @return void（通过引用修改 $substitutionarray）
  */
 function mymodule_completesubstitutionarray_lines(
     &$substitutionarray,
@@ -917,14 +917,14 @@ function mymodule_completesubstitutionarray_lines(
 ) {
     global $conf, $db;
     
-    // Per-line custom calculations
+    // 每行的自定义计算
     $margin = $line->total_ht - ($line->qty * getProductCost($line->product_id));
     $substitutionarray['line_margin'] = $margin;
 }
 ?>
 ```
 
-**Module Descriptor** (`modMymodule.class.php`):
+**模块描述符**（`modMymodule.class.php`）：
 
 ```php
 <?php
@@ -932,9 +932,9 @@ class modMymodule extends DolibarrModules
 {
     public function __construct($db)
     {
-        // ... other properties ...
+        // ... 其他属性 ...
         $this->module_parts = array(
-            'substitutions' => 1,  // Enable substitution file
+            'substitutions' => 1,  // 启用占位符文件
         );
     }
 }
@@ -943,54 +943,54 @@ class modMymodule extends DolibarrModules
 
 ---
 
-## Font Management and Character Encoding
+## 字体管理与字符编码
 
-### Troubleshooting Character Issues
+### 字符问题排查
 
-If foreign characters appear as `???` in PDF output:
+如果外文字符在 PDF 输出中显示为 `???`：
 
-**Solution 1: Change Default Font**
+**方案 1：更改默认字体**
 
-Edit `htdocs/langs/en_US/main.lang` (or your language):
+编辑 `htdocs/langs/en_US/main.lang`（或你的语言）：
 
 ```
 FONTFORPDF=dejavusans
-# or
+# 或
 FONTFORPDF=dejavusanscondensed
-# or
+# 或
 FONTFORPDF=times
 ```
 
-**Solution 2: Specify Font in Template**
+**方案 2：在模板中指定字体**
 
 ```php
 <?php
-// Use font that supports target language
-$pdf->SetFont('dejavusans', '', 10);  // Supports most languages
+// 使用支持目标语言的字体
+$pdf->SetFont('dejavusans', '', 10);  // 支持大多数语言
 $pdf->MultiCell(100, 5, $text_with_special_chars);
 ?>
 ```
 
-### Available Fonts
+### 可用字体
 
-Located in `htdocs/includes/tecnickcom/tcpdf/fonts/`:
+位于 `htdocs/includes/tecnickcom/tcpdf/fonts/`：
 
-- `Arial`, `Times`, `Courier` - Basic ASCII
-- `DejaVuSans`, `DejaVuSerif` - Unicode support (recommended)
-- Language-specific fonts for CJK, Arabic, Hebrew
+- `Arial`、`Times`、`Courier` - 基础 ASCII
+- `DejaVuSans`、`DejaVuSerif` - 支持 Unicode（推荐）
+- 针对 CJK、阿拉伯语、希伯来语的语言专用字体
 
-### Unicode Support Example
+### Unicode 支持示例
 
 ```php
 <?php
-// For documents with mixed languages
+// 用于混合语言文档
 private function setUnicodeFont(&$pdf, $text = '')
 {
-    // Detect if text contains non-ASCII characters
+    // 检测文本是否包含非 ASCII 字符
     if (preg_match('/[^\x00-\x7F]/', $text)) {
-        $pdf->SetFont('dejavusans', '', 10);  // Unicode-capable font
+        $pdf->SetFont('dejavusans', '', 10);  // 支持 Unicode 的字体
     } else {
-        $pdf->SetFont('Arial', '', 10);       // Standard font for ASCII
+        $pdf->SetFont('Arial', '', 10);       // ASCII 标准字体
     }
 }
 ?>
@@ -998,13 +998,13 @@ private function setUnicodeFont(&$pdf, $text = '')
 
 ---
 
-## Common Issues and Solutions
+## 常见问题与解决方案
 
-### Issue 1: Variables Not Displaying
+### 问题 1：变量不显示
 
-**PDF Template**:
+**PDF 模板**：
 ```php
-// Verify object property exists
+// 验证对象属性是否存在
 if (isset($object->ref)) {
     $pdf->MultiCell(100, 5, $object->ref);
 } else {
@@ -1012,54 +1012,54 @@ if (isset($object->ref)) {
 }
 ```
 
-**ODT Template**:
-- Ensure tag has no copy-paste artifacts (Ctrl+M to remove formatting)
-- Check tag format: must be exactly `{variable_name}`
-- Verify substitution function is called for custom variables
+**ODT 模板**：
+- 确保标签没有复制粘贴产生的格式（用 `Ctrl+M` 清除格式）
+- 检查标签格式：必须严格为 `{variable_name}`
+- 验证自定义变量是否调用了占位符函数
 
-### Issue 2: Styles Not Applied (PDF)
+### 问题 2：样式未生效（PDF）
 
 ```php
 <?php
-// Problem: Color resets between cells
+// 问题：单元格之间颜色被重置
 $pdf->SetTextColor(255, 0, 0);
 $pdf->MultiCell(50, 5, 'RED');
-$pdf->SetTextColor(0, 0, 0);  // MUST reset after color change
+$pdf->SetTextColor(0, 0, 0);  // 改变颜色后必须重置
 
 $pdf->MultiCell(50, 5, 'BLACK');
 ?>
 ```
 
-### Issue 3: Page Break Issues (PDF)
+### 问题 3：分页问题（PDF）
 
 ```php
 <?php
 private function checkPageBreak(&$pdf, $height, $object)
 {
-    // Get current Y position
+    // 获取当前 Y 坐标
     $currentY = $pdf->GetY();
     
-    // Add new page if not enough space
-    if ($currentY + $height > 270) {  // ~10mm margin from bottom
+    // 空间不足时添加新页面
+    if ($currentY + $height > 270) {  // 距底部约 10mm 边距
         $pdf->AddPage();
-        return true;  // Page was added
+        return true;  // 已添加页面
     }
     return false;
 }
 ?>
 ```
 
-### Issue 4: Encoding Problems (ODT)
+### 问题 4：编码问题（ODT）
 
-- Save templates in UTF-8 encoding
-- Use LibreOffice's character set options when saving
-- Ensure language module is loaded: `$langs->load("languagefile")`
+- 使用 UTF-8 编码保存模板
+- 保存时使用 LibreOffice 的字符集选项
+- 确保已加载语言模块：`$langs->load("languagefile")`
 
 ---
 
-## Template Examples
+## 模板示例
 
-### Minimal PDF Template
+### 最小 PDF 模板
 
 ```php
 <?php
@@ -1079,12 +1079,12 @@ class pdf_simple extends ModelePDFPropales
         $pdf = new TCPDF();
         $pdf->AddPage();
         
-        // Header
+        // 页头
         $pdf->SetFont('Arial', 'B', 16);
         $pdf->SetXY(10, 10);
         $pdf->MultiCell(190, 10, 'PROPOSAL', 0, 'C');
         
-        // Company info
+        // 公司信息
         $pdf->SetFont('Arial', '', 10);
         $pdf->SetXY(10, 30);
         $pdf->MultiCell(90, 5, 
@@ -1093,14 +1093,14 @@ class pdf_simple extends ModelePDFPropales
             $mysoc->zip . ' ' . $mysoc->town
         );
         
-        // Document ref
+        // 文档编号
         $pdf->SetXY(120, 30);
         $pdf->MultiCell(70, 5,
             'Ref: ' . $object->ref . "\n" .
             'Date: ' . dol_print_date($object->date, 'day')
         );
         
-        // Items
+        // 明细行
         $pdf->SetXY(10, 60);
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->MultiCell(40, 6, 'Description', 1);
@@ -1125,7 +1125,7 @@ class pdf_simple extends ModelePDFPropales
             $y += 6;
         }
         
-        // Total
+        // 总计
         $y += 5;
         $pdf->SetFont('Arial', 'B', 11);
         $pdf->SetXY(120, $y);
@@ -1133,7 +1133,7 @@ class pdf_simple extends ModelePDFPropales
         $pdf->SetXY(170, $y);
         $pdf->MultiCell(20, 6, price($object->total_ht), 0, 'R');
         
-        // Output
+        // 输出
         $filename = $conf->data_root . '/proposals/' . $object->ref . '.pdf';
         $pdf->Output($filename, 'F');
     }
@@ -1141,102 +1141,102 @@ class pdf_simple extends ModelePDFPropales
 ?>
 ```
 
-### Minimal ODT Template
+### 最小 ODT 模板
 
 ```
-PROPOSAL
+报价单
 
-Company Information:
+公司信息：
 {mycompany_name}
 {mycompany_address}
 {mycompany_zip} {mycompany_town}
-Phone: {mycompany_phone}
+电话：{mycompany_phone}
 
 ---
 
-Customer:
+客户：
 {company_name}
 {company_address}
 {company_zip} {company_town}
 
 ---
 
-Reference: {object_ref}
-Date: {object_date_locale}
+编号：{object_ref}
+日期：{object_date_locale}
 
-Items:
+明细：
 [!-- BEGIN row.lines --]
 {line_desc}
-Quantity: {line_qty}
-Unit Price: {line_up_locale}
-Total: {line_price_ttc_locale}
+数量：{line_qty}
+单价：{line_up_locale}
+总计：{line_price_ttc_locale}
 
 [!-- END row.lines --]
 
 ---
 
-TOTALS
+合计
 
-Subtotal (HT): {object_total_ht_locale}
-VAT: {object_total_vat_locale}
-Total (TTC): {object_total_ttc_locale}
+小计（不含税）：{object_total_ht_locale}
+增值税：{object_total_vat_locale}
+总计（含税）：{object_total_ttc_locale}
 
 ---
 
 [!-- IF {object_note_public} --]
-Notes: {object_note_public}
+备注：{object_note_public}
 [!-- ENDIF {object_note_public} --]
 
-Payment Terms: {object_payment_term}
+付款条款：{object_payment_term}
 ```
 
 ---
 
-## Performance Optimization
+## 性能优化
 
-### PDF Template Optimization
+### PDF 模板优化
 
 ```php
 <?php
-// Cache font initialization
+// 缓存字体初始化
 private $fontsLoaded = false;
 
 public function write_file($object, $outputlangs)
 {
     $pdf = new TCPDF();
     
-    // Pre-load fonts once
+    // 预先加载一次字体
     if (!$this->fontsLoaded) {
         $pdf->SetFont('Arial', '', 10);
         $this->fontsLoaded = true;
     }
     
-    // Batch similar operations
+    // 批量处理相似操作
     $pdf->SetTextColor(0, 0, 0);
     $pdf->SetFont('Arial', '', 9);
     
-    // Reuse calculated values
+    // 复用已计算的值
     $totalPages = ceil(count($object->lines) / 30);
 }
 ?>
 ```
 
-### ODT Template Optimization
+### ODT 模板优化
 
-- Minimize nested conditional blocks
-- Use simple variable references rather than complex expressions
-- Place array sections at document end to avoid re-processing
-- Avoid multiple substitution of the same variable
+- 尽量减少嵌套的条件块
+- 使用简单的变量引用，而非复杂表达式
+- 将数组区块放在文档末尾以避免重复处理
+- 避免对同一变量进行多次替换
 
 ---
 
-## Testing and Validation
+## 测试与验证
 
-### PDF Template Testing
+### PDF 模板测试
 
 ```php
 <?php
-// Create test object for template verification
+// 创建用于模板验证的测试对象
 $testObject = new Facture($db);
 $testObject->ref = 'TEST-001';
 $testObject->date = time();
@@ -1244,7 +1244,7 @@ $testObject->total_ht = 1000;
 $testObject->total_vat = 200;
 $testObject->total_ttc = 1200;
 
-// Add test lines
+// 添加测试行
 $line = new FactureLigne();
 $line->desc = 'Test Product';
 $line->qty = 1;
@@ -1252,35 +1252,35 @@ $line->subprice = 1000;
 $line->total_ht = 1000;
 $testObject->lines[] = $line;
 
-// Generate PDF
+// 生成 PDF
 $pdf_generator = new pdf_mycompanyblue($db);
 $pdf_generator->write_file($testObject, $langs);
 ?>
 ```
 
-### ODT Template Testing
+### ODT 模板测试
 
-1. Save ODT locally and open in LibreOffice
-2. Manually replace tags with sample values to verify layout
-3. Test conditional blocks by toggling tag values
-4. Generate via Dolibarr admin interface with test document
-5. Verify all variables populate correctly
+1. 本地保存 ODT 并在 LibreOffice 中打开
+2. 手动用示例值替换标签以验证布局
+3. 通过切换标签值测试条件块
+4. 使用测试文档通过 Dolibarr 管理界面生成
+5. 验证所有变量正确填充
 
 ---
 
-## Registration in Database
+## 数据库注册
 
-When creating a new template, register it in the database table `llx_document_model`:
+创建新模板时，将其注册到数据库表 `llx_document_model`：
 
 ```sql
 INSERT INTO llx_document_model (
-    nom,           -- Template name (mycompanyblue)
-    entity,        -- Company ID (0 for all)
-    type,          -- Document type (propale, facture, commande, etc.)
-    libelle,       -- Display label
-    description,   -- Description
-    active,        -- 1 = active, 0 = inactive
-    version        -- Schema version
+    nom,           -- 模板名称（mycompanyblue）
+    entity,        -- 公司 ID（0 表示所有）
+    type,          -- 文档类型（propale、facture、commande 等）
+    libelle,       -- 显示标签
+    description,   -- 描述
+    active,        -- 1 = 激活，0 = 停用
+    version        -- 架构版本
 ) VALUES (
     'mycompanyblue',
     0,
@@ -1294,11 +1294,11 @@ INSERT INTO llx_document_model (
 
 ---
 
-## Resources and Further Reading
+## 参考资料与延伸阅读
 
-- **TCPDF Documentation**: https://tcpdf.org/
-- **TCPDF Methods Reference**: https://tcpdf.org/doc/code/classTCPDF.html
-- **FPDF Tutorial**: http://www.fpdf.org/
-- **Dolibarr Wiki - Create PDF Template**: https://wiki.dolibarr.org/index.php/Create_a_PDF_document_template
-- **Dolibarr Wiki - Create ODT Template**: https://wiki.dolibarr.org/index.php/Create_an_ODT_document_template
-- **Dolibarr GitHub - Dev Examples**: https://github.com/Dolibarr/dolibarr/tree/develop/dev/initdata
+- **TCPDF 文档**：https://tcpdf.org/
+- **TCPDF 方法参考**：https://tcpdf.org/doc/code/classTCPDF.html
+- **FPDF 教程**：http://www.fpdf.org/
+- **Dolibarr Wiki - 创建 PDF 模板**：https://wiki.dolibarr.org/index.php/Create_a_PDF_document_template
+- **Dolibarr Wiki - 创建 ODT 模板**：https://wiki.dolibarr.org/index.php/Create_an_ODT_document_template
+- **Dolibarr GitHub - 开发示例**：https://github.com/Dolibarr/dolibarr/tree/develop/dev/initdata

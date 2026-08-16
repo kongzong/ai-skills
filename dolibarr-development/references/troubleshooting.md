@@ -1,105 +1,100 @@
-# Dolibarr Module Troubleshooting Guide
+# Dolibarr 模块排错指南
 
-## Overview
+## 概述
 
-This guide provides solutions for common issues encountered during Dolibarr module development. Each problem includes symptoms, root causes, diagnostic procedures, and solutions with code examples.
+本指南覆盖 Dolibarr 模块开发中的常见问题，每个问题按「症状 → 根因 → 解决」组织，并附可复用代码与检查清单。
 
 ---
 
-## 1. Diagnostic Tools and Debugging Tips
+## 1. 诊断工具与调试技巧
 
-### Error Log Locations
+### 错误日志位置
 
 ```bash
-# Dolibarr error logs
-C:\Program Files\wamp\www\dolibarr\documents\dolibarr.log
+# Dolibarr 错误日志（相对于 Dolibarr 根目录）
+documents/dolibarr.log
 
-# PHP error logs (Linux)
+# PHP 错误日志（Linux）
 /var/log/php_errors.log
 tail -f /var/log/apache2/error.log
 
-# MySQL error logs
+# MySQL 错误日志
 /var/log/mysql/error.log
 ```
 
-### PHP Syntax Validation
+### PHP 语法校验
 
 ```bash
-# Check PHP syntax without executing
+# 检查 PHP 语法（不执行）
 php -l /path/to/module.php
 
-# Validate all PHP files in module
+# 校验模块内所有 PHP 文件
 find htdocs/custom/mymodule -name "*.php" -exec php -l {} \;
 ```
 
-### Debug Functions in Dolibarr
+### Dolibarr 调试函数
 
 ```php
-// Log to Dolibarr error file
+// 写入 Dolibarr 错误日志
 dol_syslog('Debug message: ' . $variable, LOG_DEBUG);
 
-// Dump variable with stack trace
+// 打印变量（带堆栈）
 dol_print_r($var);
 dol_print_r($var, 1, 'prefix_');
 
-// Check if module is loaded
+// 检查模块类是否加载
 dol_include_once('/core/modules/mymodule/class.mymodule.class.php');
 if (!class_exists('MyModule')) {
     dol_syslog('ERROR: MyModule class not found', LOG_ERR);
 }
 ```
 
-### Database Query Debugging
+### 数据库查询调试
 
 ```php
-// Log SQL queries executed
-$sql = "SELECT * FROM llx_mymodule WHERE id = " . ((int)$id);
+// 记录 SQL 查询
+$sql = "SELECT rowid, ref, status FROM llx_mymodule WHERE rowid = " . ((int)$id);
 dol_syslog('SQL Query: ' . $sql, LOG_DEBUG);
 $resql = $db->query($sql);
 
-// Check for errors after query
+// 查询后检查错误
 if (!$resql) {
     dol_syslog('SQL Error: ' . $db->lasterror(), LOG_ERR);
     dol_print_error($db);
 }
 ```
 
-### Git Log Analysis
+### Git 日志分析
 
 ```bash
-# View recent changes to a file
-git log --oneline -n 20 skills/dolibarr-development/references/hooks-triggers.md
+# 查看文件最近修改
+git log --oneline -n 20 htdocs/custom/mymodule/class/myobject.class.php
 
-# Show changes with diff
+# 显示某次提交的 diff
 git show <commit-hash>
 
-# Find when a line was added/changed
+# 查找某行何时被加入/修改
 git blame file.php | grep "specific_line"
 ```
 
 ---
 
-## 2. Module Activation Problems
+## 2. 模块激活问题
 
-### Problem 2.1: Module Fails to Enable with SQL Error
+### 2.1 启用时报 SQL 错误
 
-**Symptoms:**
-- Error message: "Error executing SQL in descriptor"
-- Module stays in disabled state
-- SQL table creation failed
+**症状**：提示 "Error executing SQL in descriptor"，模块停留在禁用状态，建表失败。
 
-**Common Cause: Missing SQL Directory or Files**
-
-When module descriptor references SQL but files don't exist:
+**根因**：SQL 目录/文件缺失，或数据库用户无建表权限。
 
 ```php
-// descriptor.php - WRONG: SQL directory not created
+// descriptor.php - 错误：未创建 SQL 目录
 $modules[1]['sql'] = array(
     'install' => array('sql/install.sql'),
     'uninstall' => array('sql/uninstall.sql'),
 );
 
-// Solution: Create sql/ directory and files first
+// 解决：先创建 sql/ 目录和文件
 // File: htdocs/custom/mymodule/sql/install.sql
 CREATE TABLE IF NOT EXISTS llx_mymodule (
     rowid INT PRIMARY KEY AUTO_INCREMENT,
@@ -108,76 +103,36 @@ CREATE TABLE IF NOT EXISTS llx_mymodule (
 );
 ```
 
-**Diagnostic Steps:**
-1. Check if `sql/` directory exists: `ls -la htdocs/custom/mymodule/sql/`
-2. Verify SQL file permissions: `stat htdocs/custom/mymodule/sql/install.sql`
-3. Check MySQL error log for syntax errors
-
-**Quick Checklist:**
-- [ ] SQL directory exists at `sql/`
-- [ ] SQL files have correct names in descriptor
-- [ ] SQL syntax is valid (no typos, valid column types)
-- [ ] Database user has CREATE TABLE permission
-
----
-
-### Problem 2.2: Permission Denied When Creating Tables
-
-**Symptoms:**
-- Error: "CREATE command denied for user"
-- Module activation halts during table creation
-- Table doesn't appear in database
-
-**Common Cause: Insufficient Database Permissions**
-
 ```php
-// Diagnostic: Check database permissions
+// 诊断：检查数据库权限
 $sql = "SHOW GRANTS FOR CURRENT_USER;";
 $resql = $db->query($sql);
-if ($resql) {
-    $obj = $db->fetch_object($resql);
-    dol_syslog('Grants: ' . $obj->Grants, LOG_DEBUG);
-}
 
-// Solution: Ensure module's database user has permissions
-// Run this as database admin:
+// 解决：确保数据库用户有权限（以数据库管理员身份执行）
 // GRANT CREATE, ALTER, DROP ON dolibarr.* TO 'dolibarr_user'@'localhost';
 // FLUSH PRIVILEGES;
 ```
 
-**Quick Checklist:**
-- [ ] Database user has CREATE TABLE permission
-- [ ] Database user has ALTER TABLE permission
-- [ ] Database exists and user can access it
+**检查清单**：
+- [ ] `sql/` 目录存在且文件名与 descriptor 一致
+- [ ] SQL 语法有效（无拼写、列类型错误）
+- [ ] 数据库用户有 CREATE TABLE 权限
 
 ---
 
-### Problem 2.3: Class File Not Found After Activation
+### 2.2 类文件未找到
 
-**Symptoms:**
-- Error: "Class not found: MyModule"
-- White page or fatal error
-- Module appears enabled but doesn't work
+**症状**：报 "Class not found: MyModule"，白屏或致命错误，模块显示启用但不可用。
 
-**Common Cause: Incorrect include_path or File Location**
+**根因**：类文件路径错误或 include 方式不对。
 
 ```php
-// WRONG: File in wrong location or wrong include
-// File should be at: htdocs/custom/mymodule/class/mymodule.class.php
-
-// descriptor.php - Correct way to define classes
+// descriptor.php - 正确定义类
 $modules[1]['class'] = array(
     'MyModule' => 'custom/mymodule/class/mymodule.class.php'
 );
 
-// Solution: Verify file exists and is included correctly
-if (file_exists($file_path)) {
-    require_once $file_path;
-} else {
-    dol_syslog('ERROR: File not found: ' . $file_path, LOG_ERR);
-}
-
-// Check include in page:
+// 页面中检查并包含
 $class_file = dol_buildpath('/custom/mymodule/class/mymodule.class.php', 0);
 if (!file_exists($class_file)) {
     dol_syslog('ERROR: Cannot find ' . $class_file, LOG_ERR);
@@ -186,36 +141,27 @@ if (!file_exists($class_file)) {
 dol_include_once($class_file);
 ```
 
-**Quick Checklist:**
-- [ ] Class file exists at correct path
-- [ ] File path in descriptor matches actual location
-- [ ] dol_include_once() or require_once used correctly
-- [ ] File permissions allow reading (644 or better)
+**检查清单**：
+- [ ] 类文件位于正确路径
+- [ ] descriptor 中的路径与实际位置一致
+- [ ] 使用 `dol_include_once()` 或 `require_once`
 
 ---
 
-### Problem 2.4: Constants Undefined After Module Enable
+### 2.3 常量未定义
 
-**Symptoms:**
-- Error: "Undefined constant MY_MODULE_VERSION"
-- Constants work in one context but not another
-- Inconsistent behavior across pages
+**症状**：报 "Undefined constant MY_MODULE_VERSION"，常量在不同页面行为不一致。
 
-**Common Cause: Missing or Late Module Initialization**
+**根因**：常量在模块加载前被引用，或未在 descriptor 中定义。
 
 ```php
-// WRONG: Referencing constant before module loads
-if (defined('MY_MODULE_VERSION')) {
-    echo MY_MODULE_VERSION; // May fail if called too early
-}
-
-// Solution: Define constants in descriptor.php
+// 解决：在 descriptor.php 中定义常量
 $modules[1]['const'] = array(
     'MY_MODULE_VERSION' => '1.0.0',
     'MY_MODULE_NAME' => 'My Module'
 );
 
-// Better: Check if module exists and loaded
+// 检查模块是否激活后再使用
 global $db, $conf, $langs;
 if (isModuleActive('mymodule')) {
     $class_file = dol_buildpath('/custom/mymodule/class/mymodule.class.php', 0);
@@ -226,84 +172,47 @@ if (isModuleActive('mymodule')) {
 }
 ```
 
-**Quick Checklist:**
-- [ ] Constants defined in descriptor.php
-- [ ] Module is enabled (check database: SELECT active FROM llx_modules WHERE name='mymodule')
-- [ ] Check constant definition: defined('CONSTANT_NAME')
-- [ ] Reload page after module enable
+**检查清单**：
+- [ ] 常量在 descriptor.php 中定义
+- [ ] 模块已启用（`SELECT active FROM llx_modules WHERE name='mymodule'`）
+- [ ] 使用前用 `defined()` 检查
 
 ---
 
-### Problem 2.5: Descriptor File Syntax Error
+### 2.4 descriptor 语法错误
 
-**Symptoms:**
-- Blank page when accessing module
-- Module doesn't appear in module list
-- PHP parse error in logs
+**症状**：访问模块白屏，模块不出现于模块列表，日志有 PHP parse error。
 
-**Common Cause: PHP Syntax Error in descriptor.php**
+**根因**：descriptor.php 存在 PHP 语法错误。
 
 ```php
-// WRONG: Missing comma between array elements
+// 错误：数组元素之间缺少逗号
 $modules[1] = array(
     'name' => 'My Module'
-    'version' => '1.0.0'  // Missing comma!
+    'version' => '1.0.0'  // 缺少逗号！
 );
 
-// Solution: Validate descriptor syntax
-// File: htdocs/custom/mymodule/descriptor.php
-<?php
-
-$modules = array(
-    1 => array(
-        'name' => 'My Module',
-        'version' => '1.0.0',
-        'requires' => array(),
-        'active' => 1,
-        'class' => array(
-            'MyModule' => 'custom/mymodule/class/mymodule.class.php'
-        ),
-        'permissions' => array(),
-        'requires' => array(),
-        'menu' => array(
-            1 => array(
-                'fk_menu' => 0,
-                'type' => 'left',
-                'titre' => 'My Module Menu',
-                'mainmenu' => 'mymodule'
-            )
-        )
-    )
-);
+// 解决：校验语法
+// php -l htdocs/custom/mymodule/descriptor.php
 ```
 
-**Quick Checklist:**
-- [ ] Run: `php -l htdocs/custom/mymodule/descriptor.php`
-- [ ] All array elements separated by commas
-- [ ] Proper array nesting and braces
-- [ ] No trailing commas after last element (PHP 7.0 compatibility)
+**检查清单**：
+- [ ] 运行 `php -l descriptor.php`
+- [ ] 数组元素间逗号齐全
+- [ ] 无多余的尾逗号（PHP 7.0 兼容）
 
 ---
 
-## 3. Hook-Related Problems
+## 3. Hook 相关问题
 
-### Problem 3.1: Hook Content Doesn't Display
+### 3.1 Hook 内容不显示
 
-**Symptoms:**
-- Hook method creates output but nothing appears on page
-- Print statements in hook don't show
-- HTML in hook is ignored
+**症状**：Hook 方法生成了输出但页面不显示，echo 无效。
 
-**Common Cause: Output Buffering or Missing Context Declaration**
+**根因**：Hook 方法未返回字符串（用了 echo），或 context 未声明。
 
 ```php
-// WRONG: Hook method doesn't return output
-public function myHookMethod($action, $object) {
-    echo "This won't display in hook";
-}
-
-// Solution: Define hook in module descriptor AND implement correctly
-// File: htdocs/custom/mymodule/descriptor.php
+// descriptor.php 声明 hook
 $modules[1]['hooks'] = array(
     'invoicecard' => array(
         1 => array(
@@ -315,15 +224,8 @@ $modules[1]['hooks'] = array(
     )
 );
 
-// File: htdocs/custom/mymodule/mymodule.php
+// mymodule.php 正确实现（返回字符串而非 echo）
 class InterfaceMymoduleClass {
-    public function printObjectLineExtraField(&$object, $extrafields, $mode, &$arrayToFill) {
-        $arrayToFill = array(
-            'my_field' => 'my_value'
-        );
-        return 0;
-    }
-
     public function invoicecard($parameters, &$object, &$action, $hookmanager) {
         $out = '';
         if (in_array('invoicecard', explode(':', $parameters['currentcontext']))) {
@@ -336,31 +238,21 @@ class InterfaceMymoduleClass {
 }
 ```
 
-**Diagnostic Steps:**
-1. Check module hook contexts: `SELECT hook_data FROM llx_modules_dependencies WHERE name='mymodule'`
-2. Verify hook class is instantiated: `dol_syslog('Hook called', LOG_DEBUG);`
-3. Check hook method returns string, not void
-
-**Quick Checklist:**
-- [ ] Hook declared in descriptor.php
-- [ ] Hook method has proper signature: `function_name(&$parameters, &$object, &$action, $hookmanager)`
-- [ ] Method returns a string, not void
-- [ ] Context string includes correct context name
+**检查清单**：
+- [ ] Hook 在 descriptor.php 声明
+- [ ] 方法签名为 `function_name(&$parameters, &$object, &$action, $hookmanager)`
+- [ ] 返回字符串而非 echo
 
 ---
 
-### Problem 3.2: Hook Contexts Not Recognized
+### 3.2 Hook context 未注册
 
-**Symptoms:**
-- Hook defined but never called
-- `printObjectLineExtraField` doesn't trigger
-- Inserted HTML never appears
+**症状**：Hook 定义了但从不被调用，插入的 HTML 不出现。
 
-**Common Cause: Hook Contexts Not Registered in Database**
+**根因**：Hook context 未注册到数据库（修改后未重新启用模块）。
 
 ```php
-// Solution: Hook contexts must be declared in descriptor and database must be updated
-// File: htdocs/custom/mymodule/descriptor.php
+// 解决：context 声明在 descriptor 中，且模块需禁用后重新启用
 $modules[1]['hooks'] = array(
     'printObjectLineExtraField' => array(
         1 => array(
@@ -371,849 +263,470 @@ $modules[1]['hooks'] = array(
     )
 );
 
-// Fix: Disable and re-enable module to register hook contexts
-// Via admin interface: 
-// Setup > Modules > My Module > Disable > Enable
-
-// Or via code:
-// 1. Run activation.php 
-// 2. Update database: INSERT INTO llx_hooks ...
+// 检查 hook 注册：SELECT * FROM llx_hooks WHERE module='mymodule'
+// 重新启用模块以注册 context
 ```
 
-**Diagnostic Steps:**
-1. Check database hook registration: `SELECT * FROM llx_hooks WHERE module='mymodule'`
-2. Verify hook file path exists
-3. Module must be re-enabled after adding hooks
-
-**Quick Checklist:**
-- [ ] Hooks declared in descriptor.php before module enable
-- [ ] Module disabled and re-enabled (or activation.php run)
-- [ ] Check llx_hooks table for entries
-- [ ] Hook method implemented in hooks.php
+**检查清单**：
+- [ ] Hook 在启用模块前已声明
+- [ ] 模块禁用后重新启用
+- [ ] 检查 `llx_hooks` 表
 
 ---
 
-### Problem 3.3: Wrong Hook Parameters Received
+### 3.3 Hook 收到错误参数
 
-**Symptoms:**
-- Object parameter is NULL or wrong type
-- Hook receives unexpected action
-- Cannot access object properties in hook
+**症状**：对象参数为 NULL 或类型不对，无法访问对象属性。
 
-**Common Cause: Hook Called with Different Context Than Expected**
+**根因**：Hook 被不同于预期的对象类型调用。
 
 ```php
-// WRONG: Assuming specific object type without checking
-public function printObjectLineExtraField(&$parameters, &$object, &$action, $hookmanager) {
-    $object->myfield = 'value';  // Fails if $object is Invoice but expecting Product
-}
-
-// Solution: Check object type and context before using
+// 解决：使用前检查对象类型和 context
 public function printObjectLineExtraField(&$parameters, &$object, &$action, $hookmanager) {
     $out = '';
-    
-    // Verify object type
     if (isset($object) && is_object($object)) {
-        // Check what class we actually have
         $className = get_class($object);
         dol_syslog('Hook called with class: ' . $className, LOG_DEBUG);
-        
-        // Handle different object types
-        if ($className == 'Invoice') {
-            $out .= '<tr><td>Invoice-specific field</td></tr>';
-        } elseif ($className == 'Facture') {
+        if ($className == 'Facture') {
             $out .= '<tr><td>Facture-specific field</td></tr>';
         }
     }
-    
     return $out;
 }
 ```
 
-**Quick Checklist:**
-- [ ] Check object type with `get_class($object)`
-- [ ] Verify parameters array contains expected keys
-- [ ] Use isset() before accessing object properties
-- [ ] Consult hooks-triggers.md for correct hook signature
+**检查清单**：
+- [ ] 用 `get_class($object)` 检查对象类型
+- [ ] 访问属性前用 `isset()`
+- [ ] 核对 hooks-triggers.md 中的正确签名
 
 ---
 
-### Problem 3.4: Hook Causes Module Loading Error
+### 3.4 Hook 文件错误导致模块加载失败
 
-**Symptoms:**
-- Module enable fails when hook added
-- Fatal error in hook instantiation
-- "Class not found" after adding hook
+**症状**：添加 Hook 后模块启用失败，报 "Class not found"。
 
-**Common Cause: Hook File Has Syntax Error or Missing Class**
+**根因**：Hook 文件路径错误、语法错误或类名不符。
 
 ```php
-// WRONG: Hook file path incorrect in descriptor
-$modules[1]['hooks'] = array(
-    'printObjectLineExtraField' => array(
-        1 => array(
-            'file' => 'mymodule/wrong_file.php',  // File doesn't exist!
-            'module' => 'mymodule'
-        )
-    )
-);
-
-// Solution: Ensure hook file exists and has correct class
+// 解决：确保 hook 文件存在且类正确
 // File: htdocs/custom/mymodule/hooks.php
 <?php
 
 class InterfaceMymoduleClass {
-    
+
     public function __construct(&$db) {
         $this->db = $db;
     }
-    
+
     public function printObjectLineExtraField(&$parameters, &$object, &$action, $hookmanager) {
         $out = '';
         // Hook implementation here
         return $out;
     }
 }
-
-// Verify in descriptor.php:
-$modules[1]['hooks'] = array(
-    'printObjectLineExtraField' => array(
-        1 => array(
-            'file' => 'mymodule/hooks.php',  // CORRECT PATH
-            'module' => 'mymodule'
-        )
-    )
-);
 ```
 
-**Quick Checklist:**
-- [ ] Hook file exists at path specified in descriptor
-- [ ] Hook file has no syntax errors: `php -l htdocs/custom/mymodule/hooks.php`
-- [ ] Hook class is named `InterfaceMymoduleClass` or similar pattern
-- [ ] Hook class has proper constructor accepting database
+**检查清单**：
+- [ ] Hook 文件路径与 descriptor 一致
+- [ ] 语法校验 `php -l hooks.php`
+- [ ] 类名为 `InterfaceMymoduleClass` 风格
 
 ---
 
-### Problem 3.5: Hook Parameters Modification Not Persisted
+### 3.5 Hook 参数修改未持久化
 
-**Symptoms:**
-- Hook modifies $parameters but changes don't apply
-- Object properties set in hook get lost
-- Changes to $object don't save to database
+**症状**：Hook 中修改 `$parameters` 或对象属性后，调用方看不到变化。
 
-**Common Cause: Parameters Passed by Value, Not Reference**
+**根因**：参数按值传递而非引用传递。
 
 ```php
-// WRONG: Parameters declared without reference operator
+// 错误：参数未声明为引用
 public function printObjectLineExtraField($parameters, $object, $action, $hookmanager) {
-    $parameters['newkey'] = 'value';  // Won't be passed back!
-    $object->status = 2;  // Won't persist!
+    $parameters['newkey'] = 'value';  // 不会传回！
 }
 
-// Solution: Pass parameters by reference with &
+// 解决：用 & 引用传递
 public function printObjectLineExtraField(&$parameters, &$object, &$action, $hookmanager) {
-    // NOW modifications are passed back
-    $parameters['newkey'] = 'value';  // This WILL apply
-    $object->status = 2;  // This CAN be used by caller
-    
-    // But note: This doesn't save to DB automatically
-    // Caller must call $object->update() if they want to persist
-    
-    return 0;  // Return code: 0=success, 1=error
+    $parameters['newkey'] = 'value';  // 会传回
+    $object->status = 2;
+    // 注意：不会自动保存到数据库，调用者需调用 $object->update()
+    return 0;  // 0=成功，1=错误
 }
 ```
 
-**Quick Checklist:**
-- [ ] All hook parameters use & (reference)
-- [ ] Modifications applied to referenced objects
-- [ ] Return value is integer (0=success, 1=error)
-- [ ] Caller may need to save object manually
+**检查清单**：
+- [ ] 所有 Hook 参数使用 `&`（引用）
+- [ ] 返回整数（0=成功）
+- [ ] 需要持久化时调用 `$object->update()`
 
 ---
 
-## 4. Permissions and Security Problems
+## 4. 权限与安全问题
 
-### Problem 4.1: Permission Check Always Fails
+### 4.1 权限检查总是失败
 
-**Symptoms:**
-- Users see "Access denied" even for admins
-- Permission check returns 0 always
-- Module buttons/actions disabled for all users
+**症状**：即使是管理员也看到 "Access denied"，权限检查恒为 0。
 
-**Common Cause: Permission Not Registered or Checked Incorrectly**
+**根因**：权限未在 descriptor 注册，或检查方式错误。
 
 ```php
-// WRONG: Checking permission that doesn't exist
-if (!$user->rights->mymodule->view) {
-    accessforbidden();
-}
-
-// Solution: Register permission in descriptor AND check correctly
-// File: htdocs/custom/mymodule/descriptor.php
+// descriptor.php 注册权限
 $modules[1]['permissions'] = array(
-    1 => array(
-        'id' => 'view',
-        'label' => 'View module',
-        'longname' => 'View module content'
-    ),
-    2 => array(
-        'id' => 'create',
-        'label' => 'Create module content',
-        'longname' => 'Create new records'
-    ),
-    3 => array(
-        'id' => 'edit',
-        'label' => 'Edit module content',
-        'longname' => 'Edit existing records'
-    )
+    1 => array('id' => 'view', 'label' => 'View module', 'longname' => 'View module content'),
+    2 => array('id' => 'create', 'label' => 'Create module content', 'longname' => 'Create new records'),
+    3 => array('id' => 'edit', 'label' => 'Edit module content', 'longname' => 'Edit existing records')
 );
 
-// Correct permission check:
-$permissionCheck = $user->rights->mymodule->view;
-if (!$permissionCheck) {
-    accessforbidden('', 0, 1, 0, 'No permission to view this module');
-}
-
-// Or check by permission ID:
+// 正确检查
 if (!$user->hasRight('mymodule', 'view')) {
     accessforbidden();
 }
 ```
 
-**Diagnostic Steps:**
-1. Check permission in database: `SELECT * FROM llx_rights_def WHERE module='mymodule'`
-2. Verify user role has permission: `SELECT * FROM llx_role_permission WHERE fk_id_permission IN (...)`
-3. Test with admin account first
-
-**Quick Checklist:**
-- [ ] Permissions registered in descriptor.php
-- [ ] Permission IDs use lowercase letters only
-- [ ] User role assigned to permission
-- [ ] Check permission correctly with $user->rights->module->action or hasRight()
+**检查清单**：
+- [ ] 权限在 descriptor.php 注册
+- [ ] 权限 ID 只用小写字母
+- [ ] 用 `$user->hasRight()` 或 `$user->rights->module->action` 检查
 
 ---
 
-### Problem 4.2: File Upload Security Check Fails
+### 4.2 文件上传验证失败
 
-**Symptoms:**
-- File upload always rejected
-- "File upload not allowed" error
-- Cannot upload any file types
+**症状**：上传被拒绝，提示 "File upload not allowed"。
 
-**Common Cause: Missing MIME Type Check or File Extension Validation**
+**根因**：缺少大小限制、扩展名白名单或 MIME 校验。
 
 ```php
-// Solution: Implement proper file upload validation
 $uploaddir = $dolibarr_main_data_root . '/mymodule/';
 $filename = $_FILES['file']['name'];
 $filesize = $_FILES['file']['size'];
-$filetype = $_FILES['file']['type'];
 
-// Check file size
+// 1. 检查大小
 $maxfilesize = getDolGlobalInt('MAIN_UPLOAD_DOC_MAX_FILE', 20000000);
 if ($filesize > $maxfilesize) {
     setEventMessages('File too large', null, 'errors');
-    header("Location: list.php");
     exit;
 }
 
-// Validate extension
+// 2. 扩展名白名单
 $allowed_extensions = array('pdf', 'doc', 'docx', 'txt');
 $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 if (!in_array($file_extension, $allowed_extensions)) {
     setEventMessages('File type not allowed', null, 'errors');
-    header("Location: list.php");
     exit;
 }
 
-// Move uploaded file
+// 3. 移动文件
 if (is_dir($uploaddir)) {
-    $result = move_uploaded_file($_FILES['file']['tmp_name'], $uploaddir . $filename);
-    if ($result) {
-        setEventMessages('File uploaded successfully', null, 'mesgs');
-    } else {
-        setEventMessages('Error uploading file', null, 'errors');
-    }
-} else {
-    setEventMessages('Upload directory does not exist', null, 'errors');
+    move_uploaded_file($_FILES['file']['tmp_name'], $uploaddir . $filename);
 }
 ```
 
-**Quick Checklist:**
-- [ ] File upload directory exists with write permissions
-- [ ] File size checked against MAIN_UPLOAD_DOC_MAX_FILE
-- [ ] File extension validated against whitelist
-- [ ] Move or copy file after validation
-- [ ] Check return value of move_uploaded_file()
+**检查清单**：
+- [ ] 上传目录存在且可写
+- [ ] 大小对照 `MAIN_UPLOAD_DOC_MAX_FILE`
+- [ ] 扩展名白名单
+- [ ] 检查 `move_uploaded_file()` 返回值
 
 ---
 
-### Problem 4.3: SQL Injection Vulnerability with User Input
+### 4.3 SQL 注入
 
-**Symptoms:**
-- Query fails with special characters (quotes, backslashes)
-- Unexpected query results when input contains SQL
-- Security vulnerability detected in code review
+**症状**：含特殊字符（引号、反斜杠）的输入导致查询失败或异常结果。
 
-**Common Cause: Missing Parameter Binding or Escaping**
+**根因**：直接拼接用户输入到 SQL。
 
 ```php
-// WRONG: Direct SQL concatenation - VULNERABLE!
+// 错误：直接拼接（存在注入风险）
 $name = $_POST['name'];
 $sql = "SELECT * FROM llx_mymodule WHERE name = '" . $name . "'";
-$resql = $db->query($sql);
 
-// Solution: Use proper parameter binding
-// Option 1: Real_escape_string (deprecated but still used)
+// 解决 1：$db->escape()
 $name = $db->escape($_POST['name']);
 $sql = "SELECT * FROM llx_mymodule WHERE name = '" . $name . "'";
-$resql = $db->query($sql);
 
-// Option 2: Use database abstraction with placeholders
-$sql = "SELECT * FROM llx_mymodule WHERE name = %s";
-$sql = $db->sanitize($sql);
-$resql = $db->query($sql, array($_POST['name']));
+// 解决 2：GETPOST 类型过滤（推荐）
+$name = GETPOST('name', 'alpha');   // 仅字母数字
+$email = GETPOST('email', 'email'); // 邮箱格式
+$amount = GETPOST('amount', 'float');
+$ref = GETPOST('ref', 'alphanum');
 
-// Option 3: Use GETPOST with sanitization (PREFERRED)
-$name = GETPOST('name', 'alpha');  // Only letters and numbers
-$email = GETPOST('email', 'email');  // Email format
-$amount = GETPOST('amount', 'float');  // Float conversion
-$ref = GETPOST('ref', 'alphanum');  // Alphanumeric
-
-// Then use with proper quoting:
 $sql = "SELECT * FROM llx_mymodule WHERE name = '" . $db->escape($name) . "'";
 ```
 
-**Quick Checklist:**
-- [ ] Always use GETPOST() for user input with appropriate type
-- [ ] Use $db->escape() before inserting into SQL strings
-- [ ] Never concatenate user input directly into SQL
-- [ ] Consider using prepared statements if available
-- [ ] Validate input format (email, integer, float, etc.)
+**检查清单**：
+- [ ] 用户输入一律用 `GETPOST()` 并指定类型
+- [ ] 字符串拼入 SQL 前用 `$db->escape()`
+- [ ] 数字用 `(int)`/`(float)` 强制转换
 
 ---
 
-## 5. SQL and Database Problems
+## 5. SQL 与数据库问题
 
-### Problem 5.1: Column Count Mismatch Error
+### 5.1 列数与值数不匹配
 
-**Symptoms:**
-- Error: "Column count doesn't match value count"
-- INSERT fails silently
-- Data not saved to database
+**症状**：报 "Column count doesn't match value count"，INSERT 失败。
 
-**Common Cause: INSERT/UPDATE with Different Number of Columns and Values**
+**根因**：INSERT 的列数与值数不一致。
 
 ```php
-// WRONG: Different number of columns and values
+// 错误：1 个值对应 3 列
 $sql = "INSERT INTO llx_mymodule (name, email, status) VALUES ('John')";
-// Provides 1 value for 3 columns!
 
-// Solution: Match columns with values
-$sql = "INSERT INTO llx_mymodule (name, email, status) VALUES ('" . 
-    $db->escape($name) . "', '" . 
-    $db->escape($email) . "', " . 
+// 解决：列与值一一对应
+$sql = "INSERT INTO llx_mymodule (name, email, status) VALUES ('" .
+    $db->escape($name) . "', '" .
+    $db->escape($email) . "', " .
     ((int)$status) . ")";
-
-// Or use proper array notation (if supported):
-$sql = "INSERT INTO llx_mymodule (name, email, status) VALUES (%s, %s, %d)";
-
-// Best practice: Use object's save method
-class MyModule {
-    public function create($user) {
-        $sql = "INSERT INTO llx_mymodule (name, email, status, date_creation)";
-        $sql .= " VALUES (";
-        $sql .= "'" . $this->db->escape($this->name) . "', ";
-        $sql .= "'" . $this->db->escape($this->email) . "', ";
-        $sql .= (int)$this->status . ", ";
-        $sql .= "'" . $this->db->idate(dol_now()) . "'";
-        $sql .= ")";
-        
-        return $this->db->query($sql);
-    }
-}
 ```
 
-**Quick Checklist:**
-- [ ] Count columns in INSERT statement
-- [ ] Count values to match columns
-- [ ] Use nullable columns for optional data
-- [ ] Check for extra spaces or typos
+**检查清单**：
+- [ ] INSERT 列数与值数一致
+- [ ] 可选数据用可空列
 
 ---
 
-### Problem 5.2: Date Comparison Fails in WHERE Clause
+### 5.2 日期比较失败
 
-**Symptoms:**
-- Date filtering doesn't work
-- Records before/after date not found correctly
-- Date range queries return wrong results
+**症状**：日期过滤不生效，范围查询结果错误。
 
-**Common Cause: Date Format Mismatch or Timezone Issues**
+**根因**：日期格式不匹配或时区问题。
 
 ```php
-// WRONG: Comparing dates in different formats
-$date_from = '2024-01-01';  // User input (might be text)
-$date_to = strtotime('2024-12-31') * 1000;  // Milliseconds (wrong!)
-$sql = "SELECT * FROM llx_mymodule WHERE date_created >= '" . $date_from . "'";
-// MySQL date format: YYYY-MM-DD, but $date_from could be anything
+// 解决：用 $db->idate() 转换为 MySQL 格式
+$date_from = GETPOST('date_from', 'date');
+$date_to = GETPOST('date_to', 'date');
 
-// Solution: Convert to MySQL datetime format
-$date_from = GETPOST('date_from', 'date');  // Returns timestamp
-$date_to = GETPOST('date_to', 'date');  // Returns timestamp
-
-// Convert to MySQL format
 $sql = "SELECT * FROM llx_mymodule WHERE";
-$sql .= " date_created >= '" . $db->idate($date_from) . "'";
-$sql .= " AND date_created <= '" . $db->idate($date_to) . "'";
-
-// Or compare timestamps:
-$date_from_ts = strtotime($date_from);
-$date_to_ts = strtotime($date_to);
-$sql = "SELECT * FROM llx_mymodule WHERE";
-$sql .= " UNIX_TIMESTAMP(date_created) >= " . (int)$date_from_ts;
-$sql .= " AND UNIX_TIMESTAMP(date_created) <= " . (int)$date_to_ts;
-
-// Helper: Use Dolibarr date functions
-$date_from = dol_now();  // Current timestamp
-$sql = "SELECT * FROM llx_mymodule WHERE date_created >= '" . $db->idate($date_from) . "'";
+$sql .= " date_creation >= '" . $db->idate($date_from) . "'";
+$sql .= " AND date_creation <= '" . $db->idate($date_to) . "'";
 ```
 
-**Quick Checklist:**
-- [ ] Use $db->idate() to convert timestamps to MySQL format
-- [ ] Use UNIX_TIMESTAMP() for timestamp comparisons
-- [ ] Verify date format with MySQL: DATE_FORMAT()
-- [ ] Test with specific dates, not relative dates
+**检查清单**：
+- [ ] 用 `$db->idate()` 转换时间戳
+- [ ] 日期比较在 PHP 中用 `dol_now()` 计算（不要用 SQL 的 `UNIX_TIMESTAMP()`）
 
 ---
 
-### Problem 5.3: Foreign Key Constraint Fails on Delete
+### 5.3 外键约束导致删除失败
 
-**Symptoms:**
-- Cannot delete parent record
-- Error: "Cannot delete or update a parent row"
-- Delete query fails with constraint error
+**症状**：无法删除父记录，报 "Cannot delete or update a parent row"。
 
-**Common Cause: Child Records Reference Parent via Foreign Key**
+**根因**：子记录通过外键引用父记录。
 
 ```php
-// WRONG: Trying to delete without handling children
-$sql = "DELETE FROM llx_mymodule WHERE id = " . (int)$id;
-$resql = $db->query($sql);
-// Fails if child records reference this parent
+// ❌ 不要用 ON DELETE CASCADE（Dolibarr 禁止：会绕过 trigger，破坏业务逻辑）
+// 正确做法：软外键（无 FOREIGN KEY 约束）+ 手动先删子记录再删父记录
 
-// Solution 1: Define foreign key with CASCADE on table creation
-// SQL installation file: sql/install.sql
-CREATE TABLE llx_mymodule (
-    rowid INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(255) NOT NULL,
-    status INT DEFAULT 1,
-    date_creation DATETIME NOT NULL
-);
-
-CREATE TABLE llx_mymodule_line (
-    rowid INT PRIMARY KEY AUTO_INCREMENT,
-    fk_mymodule INT NOT NULL,
-    description TEXT,
-    CONSTRAINT fk_mymodule_line FOREIGN KEY (fk_mymodule) 
-        REFERENCES llx_mymodule(rowid) ON DELETE CASCADE
-);
-
-// Solution 2: Delete children first, then parent
+// 正确：先删子记录再删父记录
 public function delete($user) {
-    // Delete child records first
     $sql = "DELETE FROM llx_mymodule_line WHERE fk_mymodule = " . (int)$this->id;
     if (!$this->db->query($sql)) {
         $this->error = $this->db->lasterror();
         return -1;
     }
-    
-    // Then delete parent
     $sql = "DELETE FROM llx_mymodule WHERE rowid = " . (int)$this->id;
     if (!$this->db->query($sql)) {
         $this->error = $this->db->lasterror();
         return -1;
     }
-    
     return 1;
 }
 ```
 
-**Quick Checklist:**
-- [ ] Foreign keys defined with ON DELETE CASCADE or ON DELETE SET NULL
-- [ ] Delete child records before parent if no cascade
-- [ ] Use transactions to ensure data consistency
-- [ ] Test delete with existing child records
+**检查清单**：
+- [ ] 无 `FOREIGN KEY` 约束（软外键由 PHP 管理）
+- [ ] 无 `ON DELETE CASCADE` / `ON DELETE SET NULL`
+- [ ] 删除时先删子记录再删父记录
+- [ ] 用事务保证一致性
 
 ---
 
-### Problem 5.4: NULL Values Not Handled Correctly in Comparisons
+### 5.4 NULL 值比较错误
 
-**Symptoms:**
-- Filtering by NULL values returns no results
-- NULL fields shown as 0 or empty
-- Comparison logic fails silently
+**症状**：按 NULL 过滤无结果，NULL 字段显示为 0 或空。
 
-**Common Cause: Using = or != with NULL (wrong!)**
+**根因**：用 `=` 或 `!=` 比较 NULL（恒为空）。
 
 ```php
-// WRONG: NULL comparisons don't work with = or !=
-$sql = "SELECT * FROM llx_mymodule WHERE description = NULL";  // Returns nothing!
-$sql = "SELECT * FROM llx_mymodule WHERE description != NULL";  // Returns nothing!
+// 错误：= NULL 和 != NULL 都返回空
+$sql = "SELECT * FROM llx_mymodule WHERE description = NULL";  // 无结果！
+$sql = "SELECT * FROM llx_mymodule WHERE description != NULL"; // 无结果！
 
-// Solution: Use IS NULL and IS NOT NULL
+// 解决：用 IS NULL / IS NOT NULL
 $sql = "SELECT * FROM llx_mymodule WHERE description IS NULL";
 $sql = "SELECT * FROM llx_mymodule WHERE description IS NOT NULL";
 
-// Safe comparison in PHP:
+// PHP 中安全比较
 public function findByDescription($description = null) {
     $sql = "SELECT * FROM llx_mymodule WHERE 1=1";
-    
     if ($description === null || $description === '') {
         $sql .= " AND description IS NULL";
     } else {
         $sql .= " AND description = '" . $this->db->escape($description) . "'";
     }
-    
-    return $this->db->query($sql);
-}
-
-// Or use COALESCE to handle NULL:
-$sql = "SELECT * FROM llx_mymodule WHERE COALESCE(description, '') = '" . 
-    $this->db->escape($search) . "'";
-```
-
-**Quick Checklist:**
-- [ ] Use IS NULL, not = NULL
-- [ ] Use IS NOT NULL, not != NULL
-- [ ] Use COALESCE() for default values with NULL
-- [ ] Test queries specifically for NULL handling
-
----
-
-### Problem 5.5: Slow Queries from Missing Indexes
-
-**Symptoms:**
-- Queries take several seconds
-- CPU usage high during query
-- Page load times increase with more data
-
-**Common Cause: No Database Index on Frequently Queried Columns**
-
-```php
-// SQL installation file improvement:
-// WRONG: No indexes on frequently searched columns
-CREATE TABLE llx_mymodule (
-    rowid INT PRIMARY KEY AUTO_INCREMENT,
-    ref VARCHAR(255) NOT NULL,
-    status INT,
-    date_creation DATETIME
-);
-
-// Solution: Add indexes for columns used in WHERE and JOIN
-CREATE TABLE llx_mymodule (
-    rowid INT PRIMARY KEY AUTO_INCREMENT,
-    ref VARCHAR(255) NOT NULL,
-    status INT,
-    date_creation DATETIME,
-    INDEX idx_status (status),
-    INDEX idx_date (date_creation),
-    UNIQUE INDEX idx_ref (ref)
-);
-
-// Diagnostic: Analyze slow queries
-$sql = "SELECT * FROM llx_mymodule WHERE status = 1 AND date_creation > NOW() - INTERVAL 30 DAY";
-$resql = $this->db->query($sql);
-
-// Add index retroactively:
-$sql = "ALTER TABLE llx_mymodule ADD INDEX idx_status_date (status, date_creation)";
-$this->db->query($sql);
-```
-
-**Quick Checklist:**
-- [ ] Indexes on columns used in WHERE clauses
-- [ ] Indexes on columns used in JOINs (ON clause)
-- [ ] Composite indexes for multiple column queries
-- [ ] Check MySQL slow query log for analysis
-- [ ] Use EXPLAIN to verify index usage
-
----
-
-## 6. Data Type and Calculation Problems
-
-### Problem 6.1: Floating Point Precision Loss in Calculations
-
-**Symptoms:**
-- Amount calculations incorrect: 0.1 + 0.2 = 0.30000000000000004
-- Rounding errors accumulate
-- Invoice totals don't match line items
-
-**Common Cause: Using Float for Financial Calculations**
-
-```php
-// WRONG: Using float for money
-$amount = 0.1 + 0.2;  // Result: 0.30000000000000004
-$total = $amount * 100;  // Result: 30.000000000000004
-
-// Solution 1: Use string calculations with BC Math
-$amount1 = '0.1';
-$amount2 = '0.2';
-$total = bcadd($amount1, $amount2, 2);  // Result: '0.30'
-
-// Solution 2: Store amounts as DECIMAL in database
-$sql = "CREATE TABLE llx_mymodule (
-    rowid INT PRIMARY KEY,
-    amount DECIMAL(10,2) NOT NULL  -- 10 total digits, 2 decimal places
-)";
-
-// Solution 3: Use integer cents in PHP
-$amount_euros = 10.50;  // Display value
-$amount_cents = 1050;  // Storage value
-$amount_euros_calc = $amount_cents / 100;
-
-// Best practice for Dolibarr:
-public function updateAmount($amount) {
-    // Amount comes as string from form
-    $amount = (float)$amount;
-    
-    // Round to 2 decimals
-    $amount = round($amount, 2);
-    
-    // Store as DECIMAL in database
-    $sql = "UPDATE llx_mymodule SET amount = " . $amount . " WHERE id = " . (int)$this->id;
-    
     return $this->db->query($sql);
 }
 ```
 
-**Quick Checklist:**
-- [ ] Use DECIMAL(10,2) for monetary amounts in database
-- [ ] Round to 2 decimals after calculations
-- [ ] Use string-based math (BC Math) for critical calculations
-- [ ] Display with currency formatting, not raw floats
+**检查清单**：
+- [ ] 用 `IS NULL` 而非 `= NULL`
+- [ ] 用 `IS NOT NULL` 而非 `!= NULL`
 
 ---
 
-### Problem 6.2: Integer Casting Loses Data
+## 6. 数据类型与计算问题
 
-**Symptoms:**
-- Large numbers become negative
-- IDs get truncated
-- Timestamps overflow
+### 6.1 浮点精度丢失
 
-**Common Cause: Casting Large Numbers to 32-bit Integer**
+**症状**：金额计算错误（0.1 + 0.2 = 0.30000000000000004），总额对不上。
+
+**根因**：用 float 做金额计算。
 
 ```php
-// WRONG: Casting large timestamp to int
-$timestamp = 1234567890123;  // 13 digits
-$int_timestamp = (int)$timestamp;  // May truncate on 32-bit systems
+// 错误：浮点运算
+$amount = 0.1 + 0.2;  // 0.30000000000000004
 
-// Solution: Use 64-bit integers and validate size
-public function getId() {
-    // Always return as string or int (64-bit on 64-bit systems)
-    return (int)$this->rowid;
-}
+// 解决 1：BC Math 字符串计算
+$total = bcadd('0.1', '0.2', 2);  // '0.30'
 
-// For IDs that might be large:
-$id = GETPOST('id', 'int');  // Converts safely
-if ($id < 0 || $id > 9223372036854775807) {  // Max 64-bit int
+// 解决 2：金额字段用 DECIMAL
+$sql = "CREATE TABLE llx_mymodule (amount DECIMAL(10,2) NOT NULL)";
+
+// 解决 3：Dolibarr 用 price2num()
+$amount = price2num('412.62', 'MT');
+```
+
+**检查清单**：
+- [ ] 数据库金额用 `DECIMAL(10,2)`（或 Dolibarr 的 `DOUBLE(24,8)`）
+- [ ] 计算后 `round()` 或 `price2num()`
+- [ ] 关键计算用 BC Math
+
+---
+
+### 6.2 整数截断
+
+**症状**：大数变负数，ID 被截断，时间戳溢出。
+
+**根因**：大数字被强转为 32 位整数。
+
+```php
+// 解决：用 dol_now() 获取时间戳，$db->idate() 转换
+$timestamp = dol_now();  // 64 位安全
+$mysql_datetime = $db->idate($timestamp);
+
+// ID 范围校验
+$id = GETPOST('id', 'int');
+if ($id < 0 || $id > 9223372036854775807) {
     $id = 0;
 }
-
-// For timestamps, use timestamp functions:
-$timestamp = dol_now();  // Returns PHP timestamp (64-bit safe)
-$mysql_datetime = $db->idate($timestamp);  // Converts to MySQL format
 ```
 
-**Quick Checklist:**
-- [ ] Use 64-bit systems for large IDs
-- [ ] Validate cast results with range checks
-- [ ] Use dol_now() for timestamps
-- [ ] Use database native types (DATETIME) for dates
+**检查清单**：
+- [ ] 大 ID 用 64 位系统
+- [ ] 转换后做范围校验
+- [ ] 日期用 `dol_now()` 和 `$db->idate()`
 
 ---
 
-### Problem 6.3: String Truncation from Wrong Column Type
+### 6.3 字符串截断
 
-**Symptoms:**
-- Text longer than 255 characters gets cut off
-- Names or descriptions truncated unexpectedly
-- Data lost when saving
+**症状**：超过 255 字符的文本被截断，名称或描述丢失。
 
-**Common Cause: Column Type VARCHAR with Too Small Limit**
+**根因**：VARCHAR 上限过小。
 
 ```php
-// WRONG: Small VARCHAR for text that might be longer
+// 解决：合适的列类型
 CREATE TABLE llx_mymodule (
     rowid INT PRIMARY KEY,
-    name VARCHAR(50),  // Too small!
-    description VARCHAR(255)  // Might not be enough
+    name VARCHAR(255),       -- 名称用 VARCHAR
+    description LONGTEXT,    -- 长内容用 LONGTEXT
+    notes TEXT               -- 64KB 限制
 );
 
-// Solution: Use appropriate TEXT types
-CREATE TABLE llx_mymodule (
-    rowid INT PRIMARY KEY,
-    name VARCHAR(255),  // Reasonable limit for names
-    description LONGTEXT,  // For longer content
-    notes TEXT  // 64KB limit
-);
-
-// In PHP, check length before saving:
-public function save($user) {
-    if (strlen($this->description) > 65535) {
-        $this->error = 'Description too long (max 65KB)';
-        return -1;
-    }
-    
-    $sql = "UPDATE llx_mymodule SET description = '" . 
-        $this->db->escape($this->description) . 
-        "' WHERE id = " . (int)$this->id;
-    
-    return $this->db->query($sql);
+// PHP 中保存前检查长度
+if (strlen($this->description) > 65535) {
+    $this->error = 'Description too long (max 65KB)';
+    return -1;
 }
 ```
 
-**Quick Checklist:**
-- [ ] VARCHAR(255) for most text fields
-- [ ] TEXT for longer content (up to 64KB)
-- [ ] LONGTEXT for very long content
-- [ ] Validate length before saving
-- [ ] Use appropriate charset (UTF-8)
+**检查清单**：
+- [ ] 常规文本用 `VARCHAR(255)`
+- [ ] 长内容用 `TEXT`/`LONGTEXT`
+- [ ] 保存前校验长度
 
 ---
 
-### Problem 6.4: JSON Encoding/Decoding Fails
+### 6.4 JSON 编解码失败
 
-**Symptoms:**
-- JSON data becomes NULL or empty array
-- Characters converted to unicode escapes
-- JSON validation errors
+**症状**：JSON 变为 NULL 或空数组，字符被转成 unicode 转义。
 
-**Common Cause: Non-UTF8 Data or Special Characters**
+**根因**：非 UTF-8 数据或特殊字符。
 
 ```php
-// WRONG: JSON encoding non-UTF8 data
-$data = array('name' => 'Café ☕');
-$json = json_encode($data);  // May fail with special characters
-
-// Solution: Ensure proper UTF-8 encoding
-$data = array(
-    'name' => 'Café ☕',
-    'amount' => 123.45
-);
-
-// Check JSON error
+// 解决：确保 UTF-8 并检查错误
 $json = json_encode($data, JSON_UNESCAPED_UNICODE);
 if (json_last_error() !== JSON_ERROR_NONE) {
-    $error = json_last_error_msg();
-    dol_syslog('JSON Error: ' . $error, LOG_ERR);
+    dol_syslog('JSON Error: ' . json_last_error_msg(), LOG_ERR);
 }
 
-// Store in database
-$sql = "INSERT INTO llx_mymodule (data) VALUES ('" . 
-    $this->db->escape($json) . "')";
-
-// Retrieve and decode
-$sql = "SELECT data FROM llx_mymodule WHERE id = " . (int)$id;
-$resql = $this->db->query($sql);
-$obj = $this->db->fetch_object($resql);
+// 解码并提供回退
 $decoded = json_decode($obj->data, true);
-
 if (!is_array($decoded)) {
-    $decoded = array();  // Fallback to empty array
+    $decoded = array();  // 回退为空数组
 }
 ```
 
-**Quick Checklist:**
-- [ ] Use JSON_UNESCAPED_UNICODE flag for JSON_encode()
-- [ ] Ensure database charset is UTF-8
-- [ ] Check json_last_error() after encode/decode
-- [ ] Provide fallback values for failed JSON operations
+**检查清单**：
+- [ ] `json_encode` 用 `JSON_UNESCAPED_UNICODE`
+- [ ] 数据库字符集为 UTF-8
+- [ ] 编解码后检查 `json_last_error()`
 
 ---
 
-## 7. Translation and Internationalization Problems
+## 7. 翻译与国际化问题
 
-### Problem 7.1: Translations Not Appearing
+### 7.1 翻译不显示
 
-**Symptoms:**
-- English strings display instead of translated text
-- Language files not loaded
-- New strings don't appear in translation interface
+**症状**：显示英文而非翻译文本，语言文件未加载。
 
-**Common Cause: Language File Not Found or Wrong Location**
+**根因**：语言文件位置错误或未注册。
 
 ```php
-// Solution: Proper language file structure
-// File location: htdocs/custom/mymodule/langs/fr_FR/mymodule.lang
-// File location: htdocs/custom/mymodule/langs/en_US/mymodule.lang
+// 语言文件位置
+// htdocs/custom/mymodule/langs/fr_FR/mymodule.lang
+// htdocs/custom/mymodule/langs/en_US/mymodule.lang
 
-// File content: mymodule.lang
-$langs->load("mymodule@mymodule");
-
-// Usage in PHP:
+// 加载与使用
 $langs->load("mymodule@mymodule");
 echo $langs->trans("MyTranslationKey");
 
-// Register translations in descriptor:
+// descriptor 注册
 $modules[1]['translations'] = array(
     'fr_FR' => 'custom/mymodule/langs/fr_FR/mymodule.lang',
     'en_US' => 'custom/mymodule/langs/en_US/mymodule.lang'
 );
-
-// Fallback: Load language file explicitly
-$langfile = dol_buildpath('/custom/mymodule/langs/' . $langs->defaultlang . '/mymodule.lang', 0);
-if (file_exists($langfile)) {
-    $langs->load("mymodule@mymodule");
-}
-
-// Check if language is loaded:
-if (!isset($langs->tab_translate['MyTranslationKey'])) {
-    dol_syslog('WARNING: Translation key not found: MyTranslationKey', LOG_WARNING);
-}
 ```
 
-**Diagnostic Steps:**
-1. Check language file exists: `ls -la htdocs/custom/mymodule/langs/en_US/`
-2. Verify language file syntax: grep "MyTranslationKey" htdocs/custom/mymodule/langs/en_US/mymodule.lang
-3. Check language is enabled in Setup > Languages
-4. Clear translation cache
-
-**Quick Checklist:**
-- [ ] Language files in correct directory structure
-- [ ] File named correctly: `mymodule.lang`
-- [ ] Language loaded with $langs->load()
-- [ ] Use $langs->trans() to retrieve text
-- [ ] Fallback English text if translation missing
+**检查清单**：
+- [ ] 语言文件在正确目录，命名为 `mymodule.lang`
+- [ ] 用 `$langs->load()` 加载
+- [ ] 用 `$langs->trans()` 取文本
 
 ---
 
-### Problem 7.2: Special Characters in Translations Corrupted
+### 7.2 特殊字符乱码
 
-**Symptoms:**
-- Accented characters show as garbage: "Caf?" instead of "Café"
-- Unicode characters display incorrectly
-- File encoding issues
+**症状**：重音字符显示为垃圾（"Caf?" 而非 "Café"）。
 
-**Common Cause: Wrong File Encoding (should be UTF-8)**
+**根因**：文件编码非 UTF-8。
 
 ```php
-// Solution: Ensure all language files are UTF-8 encoded
-// File: htdocs/custom/mymodule/langs/en_US/mymodule.lang
-<?php
-// Encoding: UTF-8
-
-$langs->setDefaultLang("en_US");
-
-$GLOBALS['strMyModule'] = array();
-$GLOBALS['strMyModule']["ModuleName"] = "My Module";
-$GLOBALS['strMyModule']["ModuleDescription"] = "Description with special chars: Café ☕";
-$GLOBALS['strMyModule']["CreateRecord"] = "Create new record";
-
-// In code, use UTF-8 encoding:
+// 解决：确保 UTF-8，无 BOM
 header('Content-Type: text/html; charset=utf-8');
 
-// Validate UTF-8 encoding:
 $text = "Café";
 if (mb_check_encoding($text, 'UTF-8')) {
     echo "Valid UTF-8: " . $text;
@@ -1222,565 +735,312 @@ if (mb_check_encoding($text, 'UTF-8')) {
 }
 ```
 
-**Quick Checklist:**
-- [ ] All language files encoded as UTF-8
-- [ ] Save files without BOM (Byte Order Mark)
-- [ ] Set file encoding in editor (UTF-8)
-- [ ] Verify with file command: `file -i mymodule.lang`
-- [ ] Use mb_check_encoding() to validate
+**检查清单**：
+- [ ] 语言文件为 UTF-8，无 BOM
+- [ ] 用 `file -i mymodule.lang` 验证
+- [ ] 用 `mb_check_encoding()` 校验
 
 ---
 
-### Problem 7.3: Language Not Listed in Setup
+### 7.3 语言未在设置中列出
 
-**Symptoms:**
-- Custom language doesn't appear in language list
-- Cannot select new language
-- Language appears but modules not showing
+**症状**：自定义语言不出现在语言列表。
 
-**Common Cause: Missing Language Configuration or Translation File**
+**根因**：语言配置或翻译文件缺失。
 
 ```php
-// Solution: Register language properly
-// 1. Create language directory structure:
-// htdocs/custom/mymodule/langs/de_DE/mymodule.lang
-
-// 2. Register in descriptor.php:
+// 解决：正确注册语言
+// 1. 创建目录 htdocs/custom/mymodule/langs/de_DE/mymodule.lang
+// 2. descriptor.php 注册
 $modules[1]['translations'] = array(
     'de_DE' => 'custom/mymodule/langs/de_DE/mymodule.lang',
     'fr_FR' => 'custom/mymodule/langs/fr_FR/mymodule.lang',
     'en_US' => 'custom/mymodule/langs/en_US/mymodule.lang'
 );
-
-// 3. Verify language exists in Dolibarr core:
-// Check: htdocs/langs/
-// Should have: de_DE/, fr_FR/, en_US/ directories
-
-// 4. Refresh module cache:
-$mod_file = dol_buildpath('/custom/mymodule/descriptor.php', 0);
-$modules = array();
-include $mod_file;
-// Language should now be available
+// 3. 确认 Dolibarr 核心有对应语言包 htdocs/langs/
 ```
 
-**Quick Checklist:**
-- [ ] Language file exists and readable
-- [ ] Language registered in descriptor translations
-- [ ] Dolibarr has corresponding language pack installed
-- [ ] Module re-enabled after changes
-- [ ] Check Setup > Languages > Module translations
+**检查清单**：
+- [ ] 语言文件存在且可读
+- [ ] descriptor 注册 translations
+- [ ] 修改后重新启用模块
 
 ---
 
-## 8. Trigger-Related Problems
+## 8. Trigger 相关问题
 
-### Problem 8.1: Trigger Never Executes
+### 8.1 Trigger 从不执行
 
-**Symptoms:**
-- Trigger code never runs
-- No output from trigger
-- Hook listener doesn't fire
+**症状**：Trigger 代码从不运行，无任何输出。
 
-**Common Cause: Trigger Not Registered or Wrong Event Name**
+**根因**：Trigger 未注册或事件名错误。
 
 ```php
-// WRONG: Trigger with wrong event or not registered
-$object->trigger_create();  // May not work - depends on object type
-
-// Solution: Use proper trigger registration
-// File: htdocs/custom/mymodule/descriptor.php
+// descriptor.php 注册 trigger
 $modules[1]['triggers'] = array(
-    1 => array(
-        'file' => 'mymodule/triggers.php',
-        'module' => 'mymodule',
-        'trigger' => 'INVOICE_CREATE'
-    ),
-    2 => array(
-        'file' => 'mymodule/triggers.php',
-        'module' => 'mymodule',
-        'trigger' => 'INVOICE_DELETE'
-    )
+    1 => array('file' => 'mymodule/triggers.php', 'module' => 'mymodule', 'trigger' => 'INVOICE_CREATE'),
+    2 => array('file' => 'mymodule/triggers.php', 'module' => 'mymodule', 'trigger' => 'INVOICE_DELETE')
 );
 
-// File: htdocs/custom/mymodule/triggers.php
+// triggers.php
 class InterfaceMymoduleClass {
     public function __construct(&$db) {
         $this->db = $db;
     }
-
     public function runTrigger($action, $object, &$parameters, &$dropfiles) {
         if ($action == 'INVOICE_CREATE') {
-            // Invoice was just created
             dol_syslog('Invoice created: ID=' . $object->id, LOG_DEBUG);
-            // Perform custom actions here
-        } elseif ($action == 'INVOICE_DELETE') {
-            // Invoice is being deleted
-            dol_syslog('Invoice deleted: ID=' . $object->id, LOG_DEBUG);
         }
-        
-        return 0;  // 0 = success, 1 = error
+        return 0;  // 0 = 成功
     }
 }
 ```
 
-**Diagnostic Steps:**
-1. Check trigger registered: `SELECT * FROM llx_triggers WHERE module='mymodule'`
-2. Verify event action name matches constant
-3. Check trigger file exists and has no syntax errors
-4. Module must be re-enabled after adding triggers
-
-**Quick Checklist:**
-- [ ] Trigger registered in descriptor.php
-- [ ] Trigger file exists at specified path
-- [ ] Trigger method named runTrigger()
-- [ ] Event action name matches (e.g., INVOICE_CREATE)
-- [ ] Module re-enabled after changes
+**检查清单**：
+- [ ] Trigger 在 descriptor.php 注册
+- [ ] 事件名匹配（如 `INVOICE_CREATE`）
+- [ ] 方法名为 `runTrigger()`
+- [ ] 修改后重新启用模块
 
 ---
 
-### Problem 8.2: Trigger Causes Module Load Failure
+### 8.2 Trigger 导致模块加载失败
 
-**Symptoms:**
-- Module enable fails after trigger added
-- Fatal error in trigger class
-- Module appears broken
+**症状**：添加 Trigger 后模块启用失败，Trigger 类致命错误。
 
-**Common Cause: Syntax Error or Class Issue in Trigger File**
+**根因**：Trigger 文件语法错误或类问题。
 
 ```php
-// Solution: Validate trigger file syntax
-// File: htdocs/custom/mymodule/triggers.php
-<?php
+// 解决：校验语法，检查类和方法签名
+// php -l htdocs/custom/mymodule/triggers.php
 
 class InterfaceMymoduleClass {
-    
     public $db;
     public $error = '';
-    
     public function __construct(&$db) {
         $this->db = $db;
     }
-    
     public function runTrigger($action, $object, &$parameters, &$dropfiles) {
-        // Validate action
         if (!in_array($action, array('INVOICE_CREATE', 'INVOICE_DELETE'))) {
-            return 0;  // Do nothing for other actions
+            return 0;
         }
-        
-        try {
-            if ($action == 'INVOICE_CREATE') {
-                dol_syslog('Trigger INVOICE_CREATE', LOG_DEBUG);
-            } elseif ($action == 'INVOICE_DELETE') {
-                dol_syslog('Trigger INVOICE_DELETE', LOG_DEBUG);
-            }
-            
-            return 0;  // Success
-        } catch (Exception $e) {
-            $this->error = $e->getMessage();
-            dol_syslog('Trigger Error: ' . $this->error, LOG_ERR);
-            return 1;  // Error
-        }
+        return 0;
     }
 }
 ```
 
-**Quick Checklist:**
-- [ ] Run: `php -l htdocs/custom/mymodule/triggers.php`
-- [ ] Check for class definition errors
-- [ ] Verify constructor signature: `__construct(&$db)`
-- [ ] Method signature: `runTrigger($action, $object, &$parameters, &$dropfiles)`
-- [ ] Return integer (0=success, 1=error)
+**检查清单**：
+- [ ] `php -l triggers.php` 无错误
+- [ ] 构造签名 `__construct(&$db)`
+- [ ] 方法签名 `runTrigger($action, $object, &$parameters, &$dropfiles)`
+- [ ] 返回整数（0=成功，1=错误）
 
 ---
 
-### Problem 8.3: Trigger Modifies Object Incorrectly
+### 8.3 Trigger 修改对象未持久化
 
-**Symptoms:**
-- Changes made in trigger don't persist
-- Object modifications lost
-- Trigger runs but changes ignored by calling code
+**症状**：Trigger 中的修改丢失，运行了但调用方忽略。
 
-**Common Cause: Wrong Object Reference or Persistence**
+**根因**：对象未按引用传递，或修改未显式保存。
 
 ```php
-// Solution: Properly modify and persist object in trigger
 public function runTrigger($action, $object, &$parameters, &$dropfiles) {
     if ($action == 'INVOICE_CREATE') {
-        // Object is passed by reference, can modify it
-        $object->status = 1;  // This modifies the reference
-        
-        // But might not persist to database - depends on caller
-        // Caller should call $object->update() if it wants changes persisted
-        
-        // To ensure persistence from trigger, explicitly save:
+        $object->status = 1;  // 对象按引用传递，可修改
+        // 但不会自动持久化，需显式保存：
         if (method_exists($object, 'update')) {
-            $result = $object->update($this->db->user);
-            if (!$result) {
-                $this->error = 'Failed to update object';
-                return 1;
-            }
-        }
-        
-        // Or for custom module object:
-        if (get_class($object) == 'MyModule') {
-            $sql = "UPDATE llx_mymodule SET status = 1 WHERE id = " . (int)$object->id;
-            if (!$this->db->query($sql)) {
-                $this->error = $this->db->lasterror();
-                return 1;
-            }
+            $object->update($this->db->user);
         }
     }
-    
     return 0;
 }
 ```
 
-**Quick Checklist:**
-- [ ] Object passed by reference (&$object)
-- [ ] Modifications applied directly to $object
-- [ ] Call $object->update() if available to persist
-- [ ] Or execute SQL to update database
-- [ ] Return 0 for success, 1 for error
+**检查清单**：
+- [ ] 对象按引用传递（`&$object`）
+- [ ] 需要持久化时调用 `$object->update()`
+- [ ] 返回 0 表示成功
 
 ---
 
-## 9. List and Sorting Problems
+## 9. 列表与排序问题
 
-### Problem 9.1: Sorting Doesn't Work in List View
+### 9.1 排序不生效
 
-**Symptoms:**
-- Click column header, list doesn't sort
-- Sort parameter ignored
-- All records show in same order regardless of sort
+**症状**：点击列标题列表不排序，排序参数被忽略。
 
-**Common Cause: Missing Sort Field in SQL Query or Wrong Parameter**
+**根因**：SQL 缺少 ORDER BY 或排序字段未校验。
 
 ```php
-// Solution: Implement proper sorting
-// File: list.php
-$sql = "SELECT * FROM llx_mymodule WHERE 1=1";
-
-// Get sort parameters
-$sortfield = GETPOST("sortfield", "aZ09comma");  // Allow safe sort field
+$sortfield = GETPOST("sortfield", "aZ09comma");
 $sortorder = GETPOST("sortorder", "aZ09comma");
 
-// Validate sort field (prevent SQL injection)
+// 校验排序字段（防注入）
 $allowed_sortfields = array('name', 'status', 'date_creation', 'amount');
 if (!in_array($sortfield, $allowed_sortfields)) {
     $sortfield = 'name';
 }
-
-// Validate sort order
 if (!in_array($sortorder, array('ASC', 'DESC'))) {
     $sortorder = 'ASC';
 }
-
-// Apply sorting
-if ($sortfield) {
-    $sql .= " ORDER BY " . $sortfield . " " . $sortorder;
-} else {
-    $sql .= " ORDER BY name ASC";  // Default sort
-}
-
-// Execute query
-$resql = $db->query($sql);
-
-// In template, add sort links:
-// <th><a href="?sortfield=name&sortorder=DESC">Name</a></th>
-// <th><a href="?sortfield=amount&sortorder=ASC">Amount</a></th>
+$sql .= " ORDER BY " . $sortfield . " " . $sortorder;
 ```
 
-**Quick Checklist:**
-- [ ] Sort field validated against whitelist
-- [ ] SQL ORDER BY clause added to query
-- [ ] Sort column exists in table
-- [ ] Sort links include sortfield and sortorder parameters
-- [ ] Default sort order specified
+**检查清单**：
+- [ ] 排序字段用白名单校验
+- [ ] 添加 ORDER BY 子句
+- [ ] 排序链接带 sortfield/sortorder 参数
 
 ---
 
-### Problem 9.2: Filtering Doesn't Reduce List Results
+### 9.2 过滤不生效
 
-**Symptoms:**
-- Filter parameters ignored
-- All records always displayed regardless of filter
-- WHERE clause doesn't apply
+**症状**：过滤参数被忽略，始终显示全部记录。
 
-**Common Cause: Filter Parameters Not Applied to SQL**
+**根因**：过滤条件未应用到 SQL。
 
 ```php
-// Solution: Implement proper filtering
 $sql = "SELECT * FROM llx_mymodule WHERE 1=1";
 
-// Get filter parameters
 $search_name = GETPOST('search_name', 'alpha');
 $search_status = GETPOST('search_status', 'int');
-$search_date_from = GETPOST('search_date_from', 'date');
 
-// Apply filters to SQL
 if (!empty($search_name)) {
     $sql .= " AND name LIKE '%" . $db->escape($search_name) . "%'";
 }
-
 if ($search_status != '' && $search_status >= 0) {
     $sql .= " AND status = " . (int)$search_status;
 }
 
-if (!empty($search_date_from)) {
-    $sql .= " AND date_creation >= '" . $db->idate($search_date_from) . "'";
-}
-
-// Count total before pagination
+// 计数查询必须应用相同过滤条件
 $sql_count = "SELECT COUNT(*) as nb FROM llx_mymodule WHERE 1=1";
-// Apply same filters to count query!
 if (!empty($search_name)) {
     $sql_count .= " AND name LIKE '%" . $db->escape($search_name) . "%'";
 }
-if ($search_status != '' && $search_status >= 0) {
-    $sql_count .= " AND status = " . (int)$search_status;
-}
-
-$resql_count = $db->query($sql_count);
-$obj_count = $db->fetch_object($resql_count);
-$totalcount = $obj_count->nb;
-
-// Execute main query with filters
-$resql = $db->query($sql);
 ```
 
-**Quick Checklist:**
-- [ ] Filter parameters retrieved with GETPOST()
-- [ ] WHERE conditions added for each filter
-- [ ] Count query includes same filters
-- [ ] Filters validated/escaped before SQL
-- [ ] Filter form fields populated with previous values
+**检查清单**：
+- [ ] 过滤参数用 `GETPOST()` 获取
+- [ ] 每个过滤条件都拼入 WHERE
+- [ ] 计数查询应用相同过滤
 
 ---
 
-### Problem 9.3: Pagination Not Working Correctly
+### 9.3 分页不生效
 
-**Symptoms:**
-- Limit parameter ignored
-- Always shows all records or wrong number
-- Page navigation buttons don't work
+**症状**：LIMIT 被忽略，总显示全部或数量错误。
 
-**Common Cause: Limit and Offset Not Applied to Query**
+**根因**：LIMIT/OFFSET 未正确应用。
 
 ```php
-// Solution: Implement pagination correctly
-$limit = getDolGlobalInt('MAIN_MAXLIST_ROWLIST', 100);  // Records per page
+$limit = getDolGlobalInt('MAIN_MAXLIST_ROWLIST', 100);
 $page = GETPOST('page', 'int');
-if ($page < 1) {
-    $page = 1;
-}
-
+if ($page < 1) { $page = 1; }
 $offset = ($page - 1) * $limit;
 
-// Add LIMIT clause to query
 $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
-
-// Execute query with pagination
 $resql = $db->query($sql, (int)$limit, (int)$offset);
 
-// Calculate pagination info
-$num = $db->num_rows($resql);
-$totalcount = 100;  // From previous count query
 $totalpage = ceil($totalcount / $limit);
-
-// Display pagination links:
-echo '<div class="pagination">';
-for ($p = 1; $p <= $totalpage; $p++) {
-    if ($p == $page) {
-        echo '<strong>' . $p . '</strong> ';
-    } else {
-        echo '<a href="?page=' . $p . '">' . $p . '</a> ';
-    }
-}
-echo '</div>';
 ```
 
-**Quick Checklist:**
-- [ ] LIMIT clause added to SQL query
-- [ ] OFFSET calculated from page number
-- [ ] Page parameter validated as integer
-- [ ] Total record count retrieved correctly
-- [ ] Pagination links calculate correct page numbers
+**检查清单**：
+- [ ] 添加 LIMIT 子句
+- [ ] OFFSET 由页码计算
+- [ ] page 参数校验为整数
 
 ---
 
-## 10. Performance Problems
+## 10. 性能问题
 
-### Problem 10.1: Page Loads Very Slowly
+### 10.1 页面加载慢（缺索引 / N+1 查询）
 
-**Symptoms:**
-- Page takes 5+ seconds to load
-- Database queries slow
-- Excessive memory usage
+**症状**：页面 5 秒以上才加载，查询慢，内存占用高。
 
-**Common Cause: Inefficient Queries or Missing Indexes**
+**根因**：缺少索引或循环内重复查询（N+1）。
 
 ```php
-// Solution: Optimize query performance
-// Before: Slow query without index
-$sql = "SELECT * FROM llx_mymodule WHERE status = 1 AND date_creation > NOW() - INTERVAL 30 DAY";
-// Takes 10+ seconds if table has millions of rows and no index
-
-// After: Add indexes
-// SQL migration file:
+// 解决 1：添加索引
 ALTER TABLE llx_mymodule ADD INDEX idx_status (status);
 ALTER TABLE llx_mymodule ADD INDEX idx_date (date_creation);
 ALTER TABLE llx_mymodule ADD INDEX idx_status_date (status, date_creation);
 
-// Now same query takes milliseconds!
-
-// Also avoid N+1 queries:
-// WRONG: Loop and query for each record
+// 解决 2：避免 N+1 查询
+// 错误：循环内查询（100 行 = 101 次查询）
 $resql = $db->query("SELECT id FROM llx_mymodule LIMIT 100");
 while ($obj = $db->fetch_object($resql)) {
     $sql2 = "SELECT * FROM llx_mymodule_line WHERE fk_mymodule = " . $obj->id;
-    $resql2 = $db->query($sql2);  // 100 additional queries!
+    $resql2 = $db->query($sql2);  // 100 次额外查询！
 }
 
-// RIGHT: Join to get all data in one query
+// 正确：JOIN 一次取回（仅 1 次查询）
 $sql = "SELECT m.*, l.* FROM llx_mymodule m";
 $sql .= " LEFT JOIN llx_mymodule_line l ON l.fk_mymodule = m.id";
 $sql .= " WHERE m.status = 1 LIMIT 100";
-$resql = $db->query($sql);  // Only 1 query!
 ```
 
-**Quick Checklist:**
-- [ ] Add indexes to columns used in WHERE and JOIN
-- [ ] Use EXPLAIN to analyze query performance
-- [ ] Avoid N+1 query patterns (joins instead)
-- [ ] Use pagination to limit results
-- [ ] Cache frequently accessed data
+**检查清单**：
+- [ ] WHERE/JOIN 列有索引
+- [ ] 用 `EXPLAIN` 分析查询
+- [ ] 避免 N+1（用 JOIN 或批量查询）
 
 ---
 
-### Problem 10.2: Query Returns Too Many Rows, Causing Timeout
+### 10.2 查询返回过多行导致超时
 
-**Symptoms:**
-- Error: "Query execution timeout"
-- Script runs for > 30 seconds
-- Memory limit exceeded (allowed memory exceeded)
+**症状**：报 "Query execution timeout"，内存超限。
 
-**Common Cause: Query Without Proper LIMIT or Over-joining**
+**根因**：查询无 LIMIT，一次处理过多记录。
 
 ```php
-// WRONG: Returning millions of rows without limit
-$sql = "SELECT * FROM llx_mymodule";  // No WHERE, no LIMIT
-$resql = $db->query($sql);
-while ($obj = $db->fetch_object($resql)) {
-    // Processes every single record - can be millions!
-}
-
-// Solution: Always use LIMIT and pagination
+// 分批处理
 $limit = 1000;
 $offset = 0;
-$allrecords_processed = 0;
-
 do {
     $sql = "SELECT id FROM llx_mymodule WHERE status = 1";
     $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
-    
     $resql = $db->query($sql);
     $num = $db->num_rows($resql);
-    
     while ($obj = $db->fetch_object($resql)) {
-        // Process record
-        $allrecords_processed++;
+        // 处理记录
     }
-    
     $offset += $limit;
-    
-    if ($num < $limit) {
-        break;  // No more records
-    }
-    
+    if ($num < $limit) { break; }
 } while (true);
-
-echo "Processed " . $allrecords_processed . " records";
 ```
 
-**Quick Checklist:**
-- [ ] Always use LIMIT to restrict result set
-- [ ] Use OFFSET for pagination
-- [ ] Add WHERE clauses to filter data
-- [ ] Monitor query execution time
-- [ ] Increase PHP timeout if processing large batches: `set_time_limit(300)`
+**检查清单**：
+- [ ] 始终用 LIMIT 限制结果集
+- [ ] 添加 WHERE 过滤
+- [ ] 大批量处理可 `set_time_limit(300)`
 
 ---
 
-## 11. Quick Reference Index
+## 11. 快速参考索引
 
-### By Problem Category
+**模块激活**：2.1 SQL 错误 · 2.2 类未找到 · 2.3 常量未定义 · 2.4 语法错误
 
-**Module Activation (5 issues)**
-- 2.1 Module fails to enable with SQL error
-- 2.2 Permission denied when creating tables
-- 2.3 Class file not found after activation
-- 2.4 Constants undefined after module enable
-- 2.5 Descriptor file syntax error
+**Hooks**：3.1 内容不显示 · 3.2 context 未注册 · 3.3 错误参数 · 3.4 加载失败 · 3.5 修改未持久化
 
-**Hooks (5 issues)**
-- 3.1 Hook content doesn't display
-- 3.2 Hook contexts not recognized
-- 3.3 Wrong hook parameters received
-- 3.4 Hook causes module loading error
-- 3.5 Hook parameters modification not persisted
+**权限与安全**：4.1 权限失败 · 4.2 上传验证 · 4.3 SQL 注入
 
-**Permissions & Security (3 issues)**
-- 4.1 Permission check always fails
-- 4.2 File upload security check fails
-- 4.3 SQL injection vulnerability with user input
+**SQL 与数据库**：5.1 列数不匹配 · 5.2 日期比较 · 5.3 外键删除 · 5.4 NULL 比较
 
-**SQL & Database (5 issues)**
-- 5.1 Column count mismatch error
-- 5.2 Date comparison fails in WHERE clause
-- 5.3 Foreign key constraint fails on delete
-- 5.4 NULL values not handled correctly
-- 5.5 Slow queries from missing indexes
+**数据类型**：6.1 浮点精度 · 6.2 整数截断 · 6.3 字符串截断 · 6.4 JSON 编解码
 
-**Data Types & Calculations (4 issues)**
-- 6.1 Floating point precision loss
-- 6.2 Integer casting loses data
-- 6.3 String truncation from wrong column type
-- 6.4 JSON encoding/decoding fails
+**翻译**：7.1 翻译不显示 · 7.2 乱码 · 7.3 语言未列出
 
-**Translations (3 issues)**
-- 7.1 Translations not appearing
-- 7.2 Special characters in translations corrupted
-- 7.3 Language not listed in setup
+**Triggers**：8.1 从不执行 · 8.2 加载失败 · 8.3 修改未持久化
 
-**Triggers (3 issues)**
-- 8.1 Trigger never executes
-- 8.2 Trigger causes module load failure
-- 8.3 Trigger modifies object incorrectly
+**列表与排序**：9.1 排序 · 9.2 过滤 · 9.3 分页
 
-**Lists & Sorting (3 issues)**
-- 9.1 Sorting doesn't work in list view
-- 9.2 Filtering doesn't reduce list results
-- 9.3 Pagination not working correctly
-
-**Performance (2 issues)**
-- 10.1 Page loads very slowly
-- 10.2 Query returns too many rows, timeout
-
-### By Symptom Type
-
-**"Nothing works" / Module problems**: 2.1-2.5
-**"Error message received"**: 2.1, 2.2, 2.5, 4.1, 5.1-5.5, 10.2
-**"Feature doesn't appear"**: 3.1, 3.2, 7.1
-**"Wrong data shown"**: 5.2, 5.4, 6.1, 9.1-9.3
-**"Data corrupted/truncated"**: 6.2, 6.3, 7.2
-**"Performance slow"**: 10.1, 10.2
+**性能**：10.1 缺索引/N+1 · 10.2 超时
 
 ---
 
-## End of Troubleshooting Guide
+## 更多帮助
 
-For additional help, consult:
-- `technical-components.md` - Core architecture and patterns
-- `hooks-triggers.md` - Hook system details
-- `coding-rules.md` - PHP and database conventions
+- `technical-components.md` - 核心架构与模式
+- `hooks-triggers.md` - Hook 系统细节
+- `coding-rules.md` - PHP 与数据库约定
 - Dolibarr Wiki: https://wiki.dolibarr.org/index.php/Developer_documentation

@@ -1,10 +1,10 @@
-# Dolibarr REST API 集成指南 (REST API Integration Guide)
+# Dolibarr REST API 集成指南
 
-Source: https://wiki.dolibarr.org/index.php/Module_Web_Services_API_REST__developer
+Source: https://wiki.dolibarr.org/index.php/Module_Web_Services_API_REST_(developer)
 
 ---
 
-## 1. REST API 概述 (Overview)
+## 1. REST API 概述
 
 Dolibarr REST API 是一套完整的网络服务接口，允许外部系统通过 HTTP 请求对 Dolibarr 数据进行操作。
 
@@ -21,7 +21,7 @@ http://dolibarr.example.com/api/index.php/orders/123
 http://dolibarr.example.com/api/index.php/products
 ```
 
-### 1.2 支持的 HTTP 方法 (HTTP Methods)
+### 1.2 支持的 HTTP 方法
 
 | 方法 | 用途 | 示例 |
 |------|------|------|
@@ -42,7 +42,7 @@ DOLAPIKEY: your_api_key_here
 
 ---
 
-## 2. 身份验证 (Authentication)
+## 2. 身份验证
 
 ### 2.1 获取 API 密钥
 
@@ -61,7 +61,7 @@ curl -X GET \
   -H 'DOLAPIKEY: abc123def456'
 ```
 
-### 2.3 多公司支持 (Multicompany)
+### 2.3 多公司支持
 
 如果启用了多公司模块，可以强制 API 在特定公司上下文中执行:
 
@@ -89,7 +89,7 @@ $apiKey = $token['token'];  // 使用返回的令牌作为 API 密钥
 
 ---
 
-## 3. 主要端点参考 (Main Endpoints Reference)
+## 3. 主要端点参考
 
 ### 3.1 发票 API (/invoices)
 
@@ -147,7 +147,7 @@ DELETE /api/index.php/contacts/{id}         - 删除联系人
 
 ---
 
-## 4. CRUD 操作完整示例 (CRUD Operations)
+## 4. CRUD 操作完整示例
 
 ### 4.1 CREATE - 创建产品
 
@@ -162,14 +162,14 @@ $newProduct = [
     'ref'       => 'PROD-001',
     'label'     => 'My Product',
     'description' => 'Product description',
-    'type'      => 0,           // 0=product, 1=service
-    'status'    => 1,           // 1=active
+    'type'      => 0,           // 0=产品, 1=服务
+    'status'    => 1,           // 1=激活
     'status_buy' => 1,
     'status_sell' => 1,
     'price'     => 99.99,
     'price_ttc' => 119.99,
     'tva_tx'    => 20.0,
-    'price_base_type' => 'TTC'  // TTC=incl tax, HT=excl tax
+    'price_base_type' => 'TTC'  // TTC=含税, HT=不含税
 ];
 
 $curl = curl_init();
@@ -292,7 +292,7 @@ if ($httpCode == 200) {
 
 ---
 
-## 5. 数据验证和错误处理 (Validation & Error Handling)
+## 5. 数据验证和错误处理
 
 ### 5.1 HTTP 状态码
 
@@ -322,15 +322,15 @@ if ($httpCode == 200) {
 **产品必需字段:**
 - `ref` (string) - 产品参考代码，必须唯一
 - `label` (string) - 产品标签
-- `type` (integer) - 0=product, 1=service
+- `type` (integer) - 0=产品, 1=服务
 
 **订单必需字段:**
 - `socid` (integer) - 第三方 ID
-- `type` (integer) - 0=customer, 1=supplier
+- `type` (integer) - 0=客户, 1=供应商
 
 **发票必需字段:**
 - `socid` (integer) - 第三方 ID
-- `type` (integer) - 0=customer, 1=supplier
+- `type` (integer) - 0=客户, 1=供应商
 
 ### 5.4 错误处理最佳实践
 
@@ -363,9 +363,9 @@ function handleApiResponse($response, $httpCode) {
 
 ---
 
-## 6. 高级特性 (Advanced Features)
+## 6. 高级特性
 
-### 6.1 分页和限制 (Pagination)
+### 6.1 分页和限制
 
 ```php
 <?php
@@ -383,7 +383,7 @@ $url = 'http://dolibarr.example.com/api/index.php/products?' . $queryString;
 ?>
 ```
 
-### 6.2 搜索和过滤 (Filters)
+### 6.2 搜索和过滤
 
 ```php
 <?php
@@ -400,7 +400,7 @@ $params = [
 ?>
 ```
 
-### 6.3 排序 (Sorting)
+### 6.3 排序
 
 ```bash
 # 按参考代码排序（升序）
@@ -414,7 +414,7 @@ curl "http://dolibarr.example.com/api/index.php/orders?sortfield=rowid&sortorder
 
 ---
 
-## 7. 创建自定义 API 端点 (Custom API Endpoints)
+## 7. 创建自定义 API 端点
 
 ### 7.1 API 类结构
 
@@ -435,7 +435,7 @@ class ApiMyObject {
     }
     
     /**
-     * Get list
+     * 获取列表
      * @url GET /$limit/:limit
      * @authentication required
      */
@@ -445,7 +445,7 @@ class ApiMyObject {
             throw new \Exception('Access denied', 403);
         }
         
-        $sql = "SELECT * FROM llx_myobject LIMIT " . intval($limit);
+        $sql = "SELECT rowid, ref, label, status FROM llx_myobject ORDER BY rowid LIMIT " . intval($limit);
         $result = $db->query($sql);
         $objects = [];
         while ($row = $db->fetch_object($result)) {
@@ -455,9 +455,9 @@ class ApiMyObject {
     }
     
     /**
-     * Get by ID
+     * 按 ID 获取
      * @url GET /$id
-     * @id integer Object ID
+     * @id integer 对象 ID
      * @authentication required
      */
     public function get($id) {
@@ -467,7 +467,7 @@ class ApiMyObject {
         }
         
         $id = intval($id);
-        $sql = "SELECT * FROM llx_myobject WHERE rowid = " . $id;
+        $sql = "SELECT rowid, ref, label, status FROM llx_myobject WHERE rowid = " . $id;
         $result = $db->query($sql);
         if (!$row = $db->fetch_object($result)) {
             throw new \Exception('Not found', 404);
@@ -476,7 +476,7 @@ class ApiMyObject {
     }
     
     /**
-     * Create object
+     * 创建对象
      * @url POST /
      * @authentication required
      */
@@ -499,9 +499,9 @@ class ApiMyObject {
     }
     
     /**
-     * Update object
+     * 更新对象
      * @url PUT /$id
-     * @id integer Object ID
+     * @id integer 对象 ID
      * @authentication required
      */
     public function update($id) {
@@ -525,9 +525,9 @@ class ApiMyObject {
     }
     
     /**
-     * Delete object
+     * 删除对象
      * @url DELETE /$id
-     * @id integer Object ID
+     * @id integer 对象 ID
      * @authentication required
      */
     public function delete($id) {
@@ -647,7 +647,7 @@ $.ajax({
 
 ---
 
-## 9. 性能和限流 (Performance & Rate Limiting)
+## 9. 性能和限流
 
 ### 9.1 批量操作优化
 
@@ -696,7 +696,7 @@ class CachedAPI {
 
 ---
 
-## 11. 安全最佳实践 (Security Best Practices)
+## 11. 安全最佳实践
 
 ### 11.1 API 密钥管理
 
@@ -730,16 +730,15 @@ if (!is_string($data['ref']) || empty($data['ref'])) {
     throw new \Exception('Invalid reference', 400);
 }
 
-// 使用 ORM 或预编译语句防止 SQL 注入
-$stmt = $db->prepare("SELECT * FROM llx_products WHERE ref = ?");
-$stmt->bind_param("s", $data['ref']);
-$stmt->execute();
+// 使用 $db->escape() 防止 SQL 注入（Dolibarr DoliDB 风格，无 mysqli prepare/bind_param）
+$sql = "SELECT rowid, ref FROM llx_products WHERE ref = '".$db->escape($data['ref'])."'";
+$result = $db->query($sql);
 ?>
 ```
 
 ---
 
-## 12. Webhook 处理 (Webhook Handling)
+## 12. Webhook 处理
 
 如果启用了 Webhook 模块，可以接收 Dolibarr 事件:
 
@@ -762,7 +761,7 @@ if ($webhook_data['action'] == 'create') {
 
 ---
 
-## 13. 测试和调试 (Testing & Debugging)
+## 13. 测试和调试
 
 ```bash
 # 启用详细输出
@@ -773,7 +772,7 @@ curl -v -X GET \
 
 ---
 
-## 14. 常见问题排查 (Troubleshooting)
+## 14. 常见问题排查
 
 | 问题 | 原因 | 解决方案 |
 |------|------|---------|
@@ -781,11 +780,11 @@ curl -v -X GET \
 | 403 Forbidden | 权限不足 | 确保用户有所需权限 |
 | 404 Not Found | 资源不存在 | 验证 ID 和端点是否正确 |
 | 500 Server Error | 服务器错误 | 检查 Dolibarr 日志文件 |
-| No response | 网络问题 | 验证 URL 和网络连接 |
+| 无响应 | 网络问题 | 验证 URL 和网络连接 |
 
 ---
 
-## 15. API 字段映射参考 (Field Mapping)
+## 15. API 字段映射参考
 
 ### 发票对象映射
 
@@ -798,5 +797,5 @@ curl -v -X GET \
 | `total_ht` | `total` | float | 否 |
 | `total_tva` | `total_tva` | float | 否 |
 | `total_ttc` | `total_ttc` | float | 否 |
-| `date` | `datec` | date | 否 |
+| `date` | `date_creation` | date | 否 |
 | `status` | `fk_statut` | integer | 否 |

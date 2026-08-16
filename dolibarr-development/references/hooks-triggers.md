@@ -1,4 +1,4 @@
-# Dolibarr Hooks & Triggers Reference
+# Dolibarr Hooks 与 Triggers 参考
 
 Sources:
 - https://wiki.dolibarr.org/index.php/Hooks_system
@@ -7,26 +7,26 @@ Sources:
 
 ---
 
-## Hooks vs Triggers - Complete Comparison
+## Hooks 与 Triggers 完整对比
 
-| 特性 (Feature) | Hooks | Triggers |
+| 特性 | Hooks | Triggers |
 |---|---|---|
-| **执行时机 (Timing)** | 页面加载、渲染、表单处理时 | 业务事件发生时 (create/validate/delete) |
-| **主要用途 (Purpose)** | 修改 UI、添加内容、调整显示 | 执行业务规则、同步数据、审计日志 |
-| **中止能力 (Can stop operation)** | 有限 (返回值可影响渲染) | 是 (返回 <0 可中止操作) |
-| **执行环境 (Execution context)** | 页面渲染上下文，无事务 | 业务事务中 (可 rollback) |
-| **性能影响 (Performance impact)** | 用户可见的页面延迟 | 影响保存/更新速度 |
-| **调用频率 (Call frequency)** | 每次页面加载 | 仅在特定事件发生 |
-| **错误处理 (Error handling)** | 显示给用户或忽略 | 可中止业务操作 |
-| **访问位置 (File location)** | `class/actions_mymodule.class.php` | `core/triggers/interface_99_modMyModule_*.class.php` |
+| **执行时机** | 页面加载、渲染、表单处理时 | 业务事件发生时 (create/validate/delete) |
+| **主要用途** | 修改 UI、添加内容、调整显示 | 执行业务规则、同步数据、审计日志 |
+| **中止能力** | 有限 (返回值可影响渲染) | 是 (返回 <0 可中止操作) |
+| **执行环境** | 页面渲染上下文，无事务 | 业务事务中 (可 rollback) |
+| **性能影响** | 用户可见的页面延迟 | 影响保存/更新速度 |
+| **调用频率** | 每次页面加载 | 仅在特定事件发生 |
+| **错误处理** | 显示给用户或忽略 | 可中止业务操作 |
+| **访问位置** | `class/actions_mymodule.class.php` | `core/triggers/interface_99_modMyModule_*.class.php` |
 
 ---
 
-## Hooks System
+## Hooks 系统
 
-### Hook 生命周期详解 (Hook Lifecycle)
+### Hook 生命周期详解
 
-#### 1. 模块激活阶段 (Module Activation)
+#### 1. 模块激活阶段
 当模块被激活时，Dolibarr 在数据库中注册了该模块声明的所有 Hook contexts。这个过程只发生一次，除非重新启用模块。
 
 ```php
@@ -38,7 +38,7 @@ $this->module_parts = array(
 
 **重要**: 修改 hooks 数组后必须禁用并重新启用模块！
 
-#### 2. 页面加载阶段 (Page Load)
+#### 2. 页面加载阶段
 用户访问页面时，执行流程如下：
 1. 页面加载 `main.inc.php` 后初始化 HookManager
 2. 调用 `$hookmanager->initHooks(array('context'))` 注册 contexts
@@ -52,7 +52,7 @@ $hookmanager = new HookManager($db);
 $hookmanager->initHooks(array('thirdpartycard', 'globalcard'));
 ```
 
-#### 3. Hook 执行阶段 (Hook Execution)
+#### 3. Hook 执行阶段
 在代码中调用 `executeHooks()` 时，系统：
 1. 查找已注册的所有 Hook 处理器
 2. 按优先级顺序调用相应方法
@@ -78,7 +78,7 @@ if (empty($reshook)) {
 echo $hookmanager->resprints;
 ```
 
-#### 4. Hook 方法执行流程 (Method Execution Flow)
+#### 4. Hook 方法执行流程
 
 ```php
 public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
@@ -108,7 +108,7 @@ public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
 }
 ```
 
-### Step 1 — Declare contexts in module descriptor
+### 步骤 1 —— 在模块描述符中声明 context
 
 ```php
 $this->module_parts = array(
@@ -116,17 +116,9 @@ $this->module_parts = array(
 );
 ```
 
-> **Important**: After adding/removing/renaming a context, you MUST disable + re-enable the module (contexts are stored in DB on activation).
+> **重要**：新增/删除/重命名 context 后，必须禁用并重新启用模块（context 在激活时存储到数据库）。
 
-```php
-$this->module_parts = array(
-    'hooks' => array('thirdpartycard', 'orderlist', 'globalcard', 'all')
-);
-```
-
-> **Important**: After adding/removing/renaming a context, you MUST disable + re-enable the module (contexts are stored in DB on activation).
-
-### 完整 Hook Contexts 列表 (Complete Hook Contexts List)
+### 完整 Hook Contexts 列表
 
 | Context | 中文说明 | 触发位置 | 何时调用 |
 |---|---|---|---|
@@ -147,11 +139,11 @@ $this->module_parts = array(
 | `all` | 所有 | 任何地方 | 所有 Hook 点 |
 | `cli` | 命令行 | CLI 脚本 | 执行命令行脚本时 |
 
-### Step 2 — Create the hook handler class
+### 步骤 2 —— 创建 hook 处理器类
 
-File: `htdocs/custom/mymodule/class/actions_mymodule.class.php`
+文件：`htdocs/custom/mymodule/class/actions_mymodule.class.php`
 
-#### Hook 处理器完整实现示例 (Complete Hook Handler Implementation)
+#### Hook 处理器完整实现示例
 
 ```php
 <?php
@@ -163,8 +155,8 @@ class ActionsMyModule
 
     /**
      * Hook: doActions
-     * Called during action processing (POST handling)
-     * Return 0 = continue, 1 = replace standard code, <0 = error
+     * 在动作处理（POST 处理）时调用
+     * 返回 0 = 继续，1 = 替换标准代码，<0 = 错误
      */
     public function doActions($parameters, &$object, &$action, $hookmanager)
     {
@@ -176,7 +168,7 @@ class ActionsMyModule
 
     /**
      * Hook: formObjectOptions
-     * Called to add HTML in the view form
+     * 在查看表单中添加 HTML 时调用
      */
     public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
     {
@@ -188,7 +180,7 @@ class ActionsMyModule
 
     /**
      * Hook: printFieldListSelect
-     * Add fields to SQL SELECT in list queries
+     * 在列表查询的 SQL SELECT 中添加字段
      */
     public function printFieldListSelect($parameters, &$object, &$action, &$hookmanager)
     {
@@ -200,7 +192,7 @@ class ActionsMyModule
 
     /**
      * Hook: printFieldListWhere
-     * Add conditions to SQL WHERE in list queries
+     * 在列表查询的 SQL WHERE 中添加条件
      */
     public function printFieldListWhere($parameters, &$object, &$action, $hookmanager)
     {
@@ -209,7 +201,7 @@ class ActionsMyModule
 }
 ```
 
-#### Hook 处理器 - 带权限检查的完整示例 (With Permission Checks)
+#### Hook 处理器 - 带权限检查的完整示例
 
 ```php
 <?php
@@ -220,13 +212,13 @@ class ActionsMyModule
     public $resprints = '';
 
     /**
-     * Hook with permission checking
+     * 带权限检查的 hook
      *
-     * @param array $parameters Hook parameters (context, etc)
-     * @param object $object    The object being processed
-     * @param string $action    Current action (create, edit, view)
-     * @param HookManager $hookmanager Hook manager instance
-     * @return int              0=continue, 1=replace standard code, <0=error
+     * @param array $parameters hook 参数（context 等）
+     * @param object $object    正在处理的对象
+     * @param string $action    当前动作（create、edit、view）
+     * @param HookManager $hookmanager Hook 管理器实例
+     * @return int              0=继续，1=替换标准代码，<0=错误
      */
     public function formObjectOptions(
         $parameters,
@@ -275,7 +267,7 @@ class ActionsMyModule
 }
 ```
 
-#### Hook 处理器 - 处理表单提交 (Handle Form Submission)
+#### Hook 处理器 - 处理表单提交
 
 ```php
 <?php
@@ -286,13 +278,13 @@ class ActionsMyModule
     public $resprints = '';
 
     /**
-     * Handle POST actions
+     * 处理 POST 动作
      *
-     * @param array $parameters Hook parameters
-     * @param object $object    The object being processed
-     * @param string $action    Current action
-     * @param HookManager $hookmanager Hook manager
-     * @return int              Return code
+     * @param array $parameters hook 参数
+     * @param object $object    正在处理的对象
+     * @param string $action    当前动作
+     * @param HookManager $hookmanager Hook 管理器
+     * @return int              返回值
      */
     public function doActions(
         $parameters,
@@ -342,7 +334,7 @@ class ActionsMyModule
 }
 ```
 
-#### Hook 处理器 - 列表中添加字段 (Add Fields to List)
+#### Hook 处理器 - 列表中添加字段
 
 ```php
 <?php
@@ -353,7 +345,7 @@ class ActionsMyModule
     public $resprints = '';
 
     /**
-     * Add custom SELECT fields to list query
+     * 在列表查询中添加自定义 SELECT 字段
      */
     public function printFieldListSelect(
         $parameters,
@@ -373,7 +365,7 @@ class ActionsMyModule
     }
 
     /**
-     * Add custom columns to list display
+     * 在列表显示中添加自定义列标题
      */
     public function printFieldListTitle(
         $parameters,
@@ -394,7 +386,7 @@ class ActionsMyModule
     }
 
     /**
-     * Add custom column values to list rows
+     * 在列表行中添加自定义列值
      */
     public function printFieldListValue(
         $parameters,
@@ -421,7 +413,7 @@ class ActionsMyModule
     }
 
     /**
-     * Add WHERE conditions to filter list
+     * 添加 WHERE 条件以过滤列表
      */
     public function printFieldListWhere(
         $parameters,
@@ -445,7 +437,7 @@ class ActionsMyModule
 }
 ```
 
-#### Hook 处理器 - 添加统计框 (Add Stats Boxes)
+#### Hook 处理器 - 添加统计框
 
 ```php
 <?php
@@ -456,7 +448,7 @@ class ActionsMyModule
     public $resprints = '';
 
     /**
-     * Add custom stat boxes
+     * 添加自定义统计框
      */
     public function addMoreBoxStatsCustomer(
         $parameters,
@@ -493,26 +485,26 @@ class ActionsMyModule
 }
 ```
 
-### Return Codes
+### 返回值
 
-| Return | Meaning |
+| 返回值 | 含义 |
 |---|---|
-| `0` | Success; standard code following `if (empty($reshook))` WILL execute |
-| `1` | Success; standard code following `if (empty($reshook))` will NOT execute (replaced) |
-| `< 0` | Error; set `$this->errors[]` |
+| `0` | 成功；`if (empty($reshook))` 之后的标准代码将执行 |
+| `1` | 成功；`if (empty($reshook))` 之后的标准代码不执行（被替换） |
+| `< 0` | 错误；设置 `$this->errors[]` |
 
-### Properties Set by Hook Handler
+### Hook 处理器设置的属性
 
-| Property | Effect |
+| 属性 | 作用 |
 |---|---|
-| `$this->resprints` | String printed immediately after hook returns |
-| `$this->results` | Array merged into `$hookmanager->resArray` |
-| Modify `$object` | Changes propagate to caller |
-| Modify `$action` | Changes propagate to caller |
+| `$this->resprints` | hook 返回后立即输出的字符串 |
+| `$this->results` | 合并到 `$hookmanager->resArray` 的数组 |
+| 修改 `$object` | 更改会传递给调用者 |
+| 修改 `$action` | 更改会传递给调用者 |
 
-### Hook 中的常见操作 (Common Hook Operations)
+### Hook 中的常见操作
 
-#### 1. 添加 HTML 内容到表单 (Add HTML to Form)
+#### 1. 添加 HTML 内容到表单
 
 ```php
 public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
@@ -539,7 +531,7 @@ public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
 }
 ```
 
-#### 2. 处理表单字段提交 (Process Form Field Submission)
+#### 2. 处理表单字段提交
 
 ```php
 public function doActions($parameters, &$object, &$action, $hookmanager)
@@ -579,7 +571,7 @@ public function doActions($parameters, &$object, &$action, $hookmanager)
 }
 ```
 
-#### 3. 条件性显示字段 (Conditional Display Based on Permissions/Status)
+#### 3. 条件性显示字段
 
 ```php
 public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
@@ -623,7 +615,7 @@ public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
 }
 ```
 
-#### 4. 修改列表查询 (Modify List Query with SQL)
+#### 4. 修改列表查询
 
 ```php
 public function printFieldListSelect($parameters, &$object, &$action, &$hookmanager)
@@ -667,69 +659,71 @@ public function printFieldListValue($parameters, &$object, &$action, $hookmanage
 }
 ```
 
-### Finding Hook Names & Contexts
+### 查找 Hook 名称与 Context
+
 ```bash
-# Find all hook names
+# 查找所有 hook 名称
 grep -r "executeHooks(" htdocs/ --include="*.php" | grep -o "'[^']*'" | sort -u
 
-# Find all contexts
+# 查找所有 context
 grep -r "initHooks(" htdocs/ --include="*.php"
 ```
 
 ---
 
-## Common Hook Methods
+## 常见 Hook 方法
 
-| Hook method | Purpose |
+| Hook 方法 | 用途 |
 |---|---|
-| `doActions` | React to POST actions |
-| `formObjectOptions` | Add HTML rows to view/edit form |
-| `formCreateThirdpartyOptions` | Add fields in thirdparty create form |
-| `printFieldListSelect` | Add SQL SELECT fields to list query |
-| `printFieldListFrom` | Add SQL FROM/JOIN to list query |
-| `printFieldListWhere` | Add SQL WHERE to list query |
-| `printFieldListOrderby` | Add SQL ORDER BY to list query |
-| `printFieldListTitle` | Add column header to list |
-| `printFieldListValue` | Add column value to list |
-| `addMoreBoxStatsCustomer` | Add stat boxes on thirdparty card |
-| `formAddObjectLine` | Add rows to order/invoice line form |
-| `afterPDFCreation` | Hook after PDF generation |
-| `sendEmailsAfterSend` | Hook after email sent |
+| `doActions` | 响应 POST 动作 |
+| `formObjectOptions` | 在查看/编辑表单中添加 HTML 行 |
+| `formCreateThirdpartyOptions` | 在第三方创建表单中添加字段 |
+| `printFieldListSelect` | 在列表查询中添加 SQL SELECT 字段 |
+| `printFieldListFrom` | 在列表查询中添加 SQL FROM/JOIN |
+| `printFieldListWhere` | 在列表查询中添加 SQL WHERE |
+| `printFieldListOrderby` | 在列表查询中添加 SQL ORDER BY |
+| `printFieldListTitle` | 在列表中添加列标题 |
+| `printFieldListValue` | 在列表中添加列值 |
+| `addMoreBoxStatsCustomer` | 在第三方卡片上添加统计框 |
+| `formAddObjectLine` | 在订单/发票行表单中添加行 |
+| `afterPDFCreation` | PDF 生成后的 hook |
+| `sendEmailsAfterSend` | 邮件发送后的 hook |
 
 ---
 
-## Adding a Hook Point to Your Own Code
+## 在自己的代码中添加 Hook 点
 
 ```php
-// 1. Initialize hookmanager at top of page (after main.inc.php)
+// 1. 在页面顶部初始化 hookmanager（main.inc.php 之后）
 $hookmanager = new HookManager($db);
 $hookmanager->initHooks(array('mymodulepage'));
 
-// 2. Execute hooks at the point you want to be hookable
+// 2. 在希望可扩展的位置执行 hook
 $parameters = array('mydata' => $value);
 $reshook = $hookmanager->executeHooks('myHookName', $parameters, $object, $action);
 if (empty($reshook)) {
-    // standard code here — skipped if hook returns 1
+    // 标准代码 —— 若 hook 返回 1 则跳过
     echo 'default output';
 }
-// Print what hooks added
+// 输出 hook 添加的内容
 echo $hookmanager->resprints;
 ```
 
 ---
 
-## Triggers
+## 触发器（Triggers）
 
-### Trigger file naming convention
+### Trigger 文件命名约定
+
 `htdocs/custom/mymodule/core/triggers/interface_99_modMyModule_MyTrigger.class.php`
 
-Number `99` = priority (lower runs first).
+数字 `99` = 优先级（数字越小越先执行）。
 
-## Triggers
+## 触发器（Triggers）
 
-### Trigger 生命周期详解 (Trigger Lifecycle)
+### Trigger 生命周期详解
 
-#### 1. 模块激活阶段 (Module Activation)
+#### 1. 模块激活阶段
 当模块被激活时，Dolibarr 扫描模块的 `core/triggers/` 目录（或核心的 `htdocs/core/triggers/`），查找所有符合命名规则的 Trigger 类文件。
 
 Trigger 文件命名规则：
@@ -739,7 +733,7 @@ Trigger 文件命名规则：
 
 其中 `99` 是优先级（1-999，数字越小优先级越高）。
 
-#### 2. 业务事件发生阶段 (Business Event Occurs)
+#### 2. 业务事件发生阶段
 当用户执行业务操作（创建、修改、删除等）时：
 1. 业务对象类调用 `call_trigger('EVENT_CODE', $user)`
 2. 触发器管理器查找所有已注册的 Trigger 类
@@ -763,7 +757,7 @@ public function create($user, $notrigger = 0)
 }
 ```
 
-#### 3. Trigger 执行阶段 (Trigger Execution)
+#### 3. Trigger 执行阶段
 ```php
 // 伪代码：TriggerManager 的执行流程
 foreach ($triggers as $trigger) {
@@ -781,22 +775,22 @@ foreach ($triggers as $trigger) {
 }
 ```
 
-#### 4. 事务处理（Transactions）
+#### 4. 事务处理
 Trigger 执行在数据库事务中，这意味着：
 - 如果 runTrigger() 返回 < 0，则调用者可能回滚整个事务
 - Trigger 可以修改数据库中的数据
 - Trigger 不能中途提交事务（由调用者控制）
 
-### Trigger 文件命名约定 (Trigger File Naming Convention)
+### Trigger 文件命名约定
 `htdocs/custom/mymodule/core/triggers/interface_99_modMyModule_MyTrigger.class.php`
 
-Number `99` = priority (lower runs first).
+数字 `99` = 优先级（数字越小越先执行）。
 
-### 完整 Trigger 事件列表 (Complete Trigger Events List)
+### 完整 Trigger 事件列表
 
 以下是 Dolibarr 中最常用的 Trigger 事件：
 
-#### 第三方 (Company/Third Party)
+#### 第三方
 | 事件代码 | 对象类型 | 说明 |
 |---|---|---|
 | `COMPANY_CREATE` | societe.class.php | 创建第三方（客户/供应商） |
@@ -804,7 +798,7 @@ Number `99` = priority (lower runs first).
 | `COMPANY_DELETE` | societe.class.php | 删除第三方 |
 | `COMPANY_SENTBYMAIL` | societe.class.php | 第三方信息通过邮件发送 |
 
-#### 发票 (Invoice)
+#### 发票
 | 事件代码 | 对象类型 | 说明 |
 |---|---|---|
 | `BILL_CREATE` | facture.class.php | 创建客户发票 |
@@ -815,7 +809,7 @@ Number `99` = priority (lower runs first).
 | `BILL_SENTBYMAIL` | facture.class.php | 发票通过邮件发送 |
 | `BILL_CANCEL` | facture.class.php | 取消发票 |
 
-#### 订单 (Order)
+#### 订单
 | 事件代码 | 对象类型 | 说明 |
 |---|---|---|
 | `ORDER_CREATE` | commande.class.php | 创建销售订单 |
@@ -825,7 +819,7 @@ Number `99` = priority (lower runs first).
 | `ORDER_CLASSIFY_BILLED` | commande.class.php | 订单标记为已开票 |
 | `ORDER_CLOSE` | commande.class.php | 关闭订单 |
 
-#### 报价单 (Proposal)
+#### 报价单
 | 事件代码 | 对象类型 | 说明 |
 |---|---|---|
 | `PROPAL_CREATE` | propal.class.php | 创建报价单 |
@@ -833,7 +827,7 @@ Number `99` = priority (lower runs first).
 | `PROPAL_DELETE` | propal.class.php | 删除报价单 |
 | `PROPAL_SENTBYMAIL` | propal.class.php | 报价单通过邮件发送 |
 
-#### 产品 (Product)
+#### 产品
 | 事件代码 | 对象类型 | 说明 |
 |---|---|---|
 | `PRODUCT_CREATE` | product.class.php | 创建产品 |
@@ -841,7 +835,7 @@ Number `99` = priority (lower runs first).
 | `PRODUCT_DELETE` | product.class.php | 删除产品 |
 | `PRODUCT_PRICE_MODIFY` | product.class.php | 修改产品价格 |
 
-#### 用户 (User)
+#### 用户
 | 事件代码 | 对象类型 | 说明 |
 |---|---|---|
 | `USER_CREATE` | user.class.php | 创建用户 |
@@ -849,7 +843,7 @@ Number `99` = priority (lower runs first).
 | `USER_DELETE` | user.class.php | 删除用户 |
 | `USER_LOGIN` | user.class.php | 用户登录 |
 
-### Trigger 类结构 (Trigger Class Structure)
+### Trigger 类结构
 
 ```php
 <?php
@@ -869,20 +863,20 @@ class InterfaceMyTrigger extends DolibarrTriggers
     public function runTrigger($action, $object, User $user, Translate $langs, Conf $conf)
     {
         if ($action == 'BILL_CREATE') {
-            // react to invoice creation
+            // 响应发票创建
             dol_syslog("Trigger BILL_CREATE fired", LOG_DEBUG);
         }
         if ($action == 'ORDER_VALIDATE') {
-            // react to order validation
+            // 响应订单验证
         }
         return 0; // 0=ok, <0=error
     }
 }
 ```
 
-### 完整 Trigger 类实现示例 (Complete Trigger Class Implementation)
+### 完整 Trigger 类实现示例
 
-#### 基础 Trigger 实现 - 事件路由 (Event Routing)
+#### 基础 Trigger 实现 - 事件路由
 
 ```php
 <?php
@@ -893,9 +887,9 @@ class InterfaceMyModuleTrigger extends DolibarrTriggers
     private $db;
 
     /**
-     * Constructor
+     * 构造函数
      *
-     * @param object $db Database connection
+     * @param object $db 数据库连接
      */
     public function __construct($db)
     {
@@ -910,14 +904,14 @@ class InterfaceMyModuleTrigger extends DolibarrTriggers
     }
 
     /**
-     * Run trigger - main entry point for all events
+     * 运行触发器 - 所有事件的主入口
      *
-     * @param string $action Trigger action code
-     * @param object $object The object that triggered the event
-     * @param object $user   User object
-     * @param object $langs  Langs object
-     * @param object $conf   Config object
-     * @return int           0 if OK, <0 if error
+     * @param string $action 触发器动作代码
+     * @param object $object 触发事件的对象
+     * @param object $user   用户对象
+     * @param object $langs  语言对象
+     * @param object $conf   配置对象
+     * @return int           成功返回 0，出错返回 <0
      */
     public function runTrigger(
         $action,
@@ -989,7 +983,7 @@ class InterfaceMyModuleTrigger extends DolibarrTriggers
 }
 ```
 
-#### Trigger 实现 - 带权限检查和事务处理 (With Permissions and Transactions)
+#### Trigger 实现 - 带权限检查和事务处理
 
 ```php
 <?php
@@ -1010,13 +1004,13 @@ class InterfaceMyModuleAdvancedTrigger extends DolibarrTriggers
     }
 
     /**
-     * Handle invoice validation with audit logging
+     * 处理发票验证并记录审计日志
      *
-     * @param object $object Invoice object
-     * @param object $user   User object
-     * @param object $langs  Langs object
-     * @param object $conf   Config object
-     * @return int           0 if OK, <0 if error
+     * @param object $object 发票对象
+     * @param object $user   用户对象
+     * @param object $langs  语言对象
+     * @param object $conf   配置对象
+     * @return int           成功返回 0，出错返回 <0
      */
     public function handleBillValidate($object, $user, $langs, $conf)
     {
@@ -1073,7 +1067,7 @@ class InterfaceMyModuleAdvancedTrigger extends DolibarrTriggers
 }
 ```
 
-#### Trigger 实现 - 发票确认时创建追踪记录 (Create Tracking on Bill Validation)
+#### Trigger 实现 - 发票确认时创建追踪记录
 
 ```php
 <?php
@@ -1107,7 +1101,7 @@ class InterfaceMyModuleTrackingTrigger extends DolibarrTriggers
     }
 
     /**
-     * Create tracking record when bill is validated
+     * 发票验证时创建追踪记录
      */
     private function trackBillValidation($object, $user)
     {
@@ -1120,7 +1114,7 @@ class InterfaceMyModuleTrackingTrigger extends DolibarrTriggers
         $sql .= $object->id . ', ';
         $sql .= "'VALIDATED', ";
         $sql .= $user->id . ', ";
-        $sql .= "NOW(), ";
+        $sql .= "'" . $this->db->idate(dol_now()) . "', ";
         $sql .= "'" . $this->db->escape(
             'Invoice ' . $object->ref . ' (Amount: ' . $object->total_ttc . ')'
         ) . "'";
@@ -1137,7 +1131,7 @@ class InterfaceMyModuleTrackingTrigger extends DolibarrTriggers
     }
 
     /**
-     * Create tracking record when order is validated
+     * 订单验证时创建追踪记录
      */
     private function trackOrderValidation($object, $user)
     {
@@ -1149,7 +1143,7 @@ class InterfaceMyModuleTrackingTrigger extends DolibarrTriggers
         $sql .= $object->id . ', ';
         $sql .= "'VALIDATED', ";
         $sql .= $user->id . ', ";
-        $sql .= "NOW(), ";
+        $sql .= "'" . $this->db->idate(dol_now()) . "', ";
         $sql .= "'" . $this->db->escape(
             'Order ' . $object->ref . ' (Total: ' . $object->total_ttc . ')'
         ) . "'";
@@ -1165,7 +1159,7 @@ class InterfaceMyModuleTrackingTrigger extends DolibarrTriggers
     }
 
     /**
-     * Clean up tracking records when bill is deleted
+     * 发票删除时清理追踪记录
      */
     private function cleanupBillTracking($object, $user)
     {
@@ -1187,7 +1181,7 @@ class InterfaceMyModuleTrackingTrigger extends DolibarrTriggers
 }
 ```
 
-#### Trigger 实现 - 第三方创建时发送通知 (Send Notification on Company Creation)
+#### Trigger 实现 - 第三方创建时发送通知
 
 ```php
 <?php
@@ -1219,7 +1213,7 @@ class InterfaceMyModuleNotificationTrigger extends DolibarrTriggers
     }
 
     /**
-     * Send notification when company is created
+     * 第三方创建时发送通知
      */
     private function notifyCompanyCreated($object, $user, $langs, $conf)
     {
@@ -1273,7 +1267,7 @@ class InterfaceMyModuleNotificationTrigger extends DolibarrTriggers
     }
 
     /**
-     * Send notification when bill is created
+     * 发票创建时发送通知
      */
     private function notifyBillCreated($object, $user, $langs, $conf)
     {
@@ -1300,9 +1294,9 @@ class InterfaceMyModuleNotificationTrigger extends DolibarrTriggers
 }
 ```
 
-### Trigger 中的常见操作 (Common Trigger Operations)
+### Trigger 中的常见操作
 
-#### 1. 创建审计日志 (Create Audit Log)
+#### 1. 创建审计日志
 
 ```php
 public function runTrigger($action, $object, $user, $langs, $conf)
@@ -1317,7 +1311,7 @@ public function runTrigger($action, $object, $user, $langs, $conf)
         $sql .= $object->id . ', ';
         $sql .= "'VALIDATE', ";
         $sql .= $user->id . ', ";
-        $sql .= "NOW(), ";
+        $sql .= "'" . $this->db->idate(dol_now()) . "', ";
         $sql .= "NULL, ";
         $sql .= "'" . $this->db->escape(json_encode($object->fields)) . "'";
         $sql .= ')';
@@ -1332,7 +1326,7 @@ public function runTrigger($action, $object, $user, $langs, $conf)
 }
 ```
 
-#### 2. 自动创建相关记录 (Auto-create Related Records)
+#### 2. 自动创建相关记录
 
 ```php
 public function runTrigger($action, $object, $user, $langs, $conf)
@@ -1355,7 +1349,7 @@ public function runTrigger($action, $object, $user, $langs, $conf)
 }
 ```
 
-#### 3. 数据验证和转换 (Data Validation and Transformation)
+#### 3. 数据验证和转换
 
 ```php
 public function runTrigger($action, $object, $user, $langs, $conf)
@@ -1396,7 +1390,7 @@ private function formatPhoneNumber($phone)
 }
 ```
 
-#### 4. 条件性事件处理 (Conditional Event Handling)
+#### 4. 条件性事件处理
 
 ```php
 public function runTrigger($action, $object, $user, $langs, $conf)
@@ -1420,7 +1414,7 @@ public function runTrigger($action, $object, $user, $langs, $conf)
 
 ---
 
-## Hooks vs Triggers - 详细对比 (Detailed Comparison)
+## Hooks 与 Triggers 详细对比
 
 | 方面 | Hooks | Triggers |
 |---|---|---|
@@ -1434,7 +1428,7 @@ public function runTrigger($action, $object, $user, $langs, $conf)
 | **性能影响** | 用户感受到延迟 | 影响保存/更新速度 |
 | **调试难度** | 相对容易（页面级） | 需要日志分析 |
 
-### 何时使用 Hooks (When to Use Hooks)
+### 何时使用 Hooks
 - 添加自定义字段显示
 - 修改用户界面
 - 向列表添加列
@@ -1442,7 +1436,7 @@ public function runTrigger($action, $object, $user, $langs, $conf)
 - 添加统计框或报告
 - 基于权限条件显示内容
 
-### 何时使用 Triggers (When to Use Triggers)
+### 何时使用 Triggers
 - 创建审计日志
 - 自动创建相关记录
 - 同步外部系统
@@ -1453,7 +1447,7 @@ public function runTrigger($action, $object, $user, $langs, $conf)
 
 ---
 
-## Common Trigger Events (Complete List)
+## 常见 Trigger 事件（完整列表）
 
 `BILL_CREATE`, `BILL_MODIFY`, `BILL_VALIDATE`, `BILL_DELETE`, `BILL_SENTBYMAIL`, `BILL_PAYED`
 `ORDER_CREATE`, `ORDER_VALIDATE`, `ORDER_DELETE`, `ORDER_SENTBYMAIL`, `ORDER_CLASSIFY_BILLED`
@@ -1464,29 +1458,29 @@ public function runTrigger($action, $object, $user, $langs, $conf)
 `PRODUCT_CREATE`, `PRODUCT_MODIFY`, `PRODUCT_DELETE`, `PRODUCT_PRICE_MODIFY`
 `CONTACT_CREATE`, `CONTACT_MODIFY`, `CONTACT_DELETE`, `CONTACT_ENABLEDISABLE`
 
-Find all: search `run_triggers(` in source.
+查找全部：在源码中搜索 `run_triggers(`。
 
-### Finding Trigger Events and Hooks
+### 查找 Trigger 事件与 Hook
 
 ```bash
-# Find all trigger events in source
+# 在源码中查找所有 trigger 事件
 grep -r "run_triggers\(" htdocs/ --include="*.php" | grep -o "'[A-Z_]*'" | sort -u
 
-# Find all hooks in source
+# 在源码中查找所有 hook
 grep -r "executeHooks(" htdocs/ --include="*.php" | grep -o "'[a-zA-Z]*'" | sort -u
 
-# Find hook contexts
+# 查找 hook context
 grep -r "initHooks(" htdocs/ --include="*.php" | grep -o "'[a-z]*'" | sort -u
 
-# Find trigger files
+# 查找 trigger 文件
 find htdocs/core/triggers/ -name "interface_*.class.php"
 ```
 
 ---
 
-## 总结 (Summary)
+## 总结
 
-### Hook vs Trigger 决策流程 (Decision Flow)
+### Hook 与 Trigger 决策流程
 
 1. **需要修改用户界面？** -> 使用 **Hook** (`formObjectOptions`, `printFieldListTitle`)
 2. **需要响应业务事件？** -> 使用 **Trigger** (`BILL_CREATE`, `ORDER_VALIDATE`)
@@ -1495,7 +1489,7 @@ find htdocs/core/triggers/ -name "interface_*.class.php"
 5. **需要中止业务操作？** -> 使用 **Trigger** (返回 <0)
 6. **需要过滤列表或添加搜索？** -> 使用 **Hook** (`printFieldListWhere`)
 
-### 最佳实践 (Best Practices)
+### 最佳实践
 
 #### Hook 最佳实践
 - 总是检查 context 是否匹配
@@ -1515,7 +1509,7 @@ find htdocs/core/triggers/ -name "interface_*.class.php"
 - 对于长操作考虑异步处理
 - 在开发期间使用 dol_syslog 记录关键信息
 
-### 性能考虑 (Performance Considerations)
+### 性能考虑
 
 | 操作 | Hook | Trigger |
 |---|---|---|

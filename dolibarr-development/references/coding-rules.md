@@ -1,21 +1,21 @@
-# Dolibarr Coding Rules Reference
+# Dolibarr 编码规范参考
 
 Source: https://wiki.dolibarr.org/index.php/Language_and_development_rules
 
 ---
 
-## PHP Rules
+## PHP 规则
 
-### Compatibility
-- PHP 7.1.0+ (no required extra modules except DB driver)
-- MySQL 5.7+ / MariaDB. PostgreSQL supported (SQL converted on the fly by driver)
-- Must work on all OS (Windows, Linux, macOS)
+### 兼容性
+- PHP 7.1.0+（除数据库驱动外无需额外模块）
+- MySQL 5.7+ / MariaDB。支持 PostgreSQL（SQL 由驱动即时转换）
+- 必须在所有操作系统（Windows、Linux、macOS）上运行
 
-### File Conventions
-- All PHP files end with `.php`
-- Files saved in Unix format (LF, not CR/LF)
-- Always use `<?php` — never short tags `<?` or `<?=`
-- Copyright header required at top of every file
+### 文件约定
+- 所有 PHP 文件以 `.php` 结尾
+- 文件以 Unix 格式（LF，非 CR/LF）保存
+- 始终使用 `<?php` —— 切勿使用短标签 `<?` 或 `<?=`
+- 每个文件顶部必须有版权声明头
 
 ```php
 <?php
@@ -27,45 +27,45 @@ Source: https://wiki.dolibarr.org/index.php/Language_and_development_rules
  */
 ```
 
-### Coding Style
-- **PSR-12** "MUST" rules apply (https://www.php-fig.org/psr/psr-12/)
-- Exceptions: tabs allowed (don't replace with spaces), long lines acceptable for data declarations, hard limit 1000 chars/line
-- Variables outside strings: `"text ".$variable." !\n"` not `"text $variable !\n"`
-- Comments: C-style (`//` single line, `/* */` blocks)
-- Functions return `>= 0` on success, `< 0` on error
-- Use `include_once` for files with class/function definitions (`*.class.php`, `*.lib.php`)
-- Use `include` for template-style files (`*.inc.php`, `*.tpl.php`)
-- No dead code in core; no `SELECT *`
+### 编码风格
+- **PSR-12** "MUST" 规则适用（https://www.php-fig.org/psr/psr-12/）
+- 例外：允许使用制表符（不要替换为空格），数据声明可接受长行，硬性限制每行 1000 字符
+- 变量放在字符串外：`"text ".$variable." !\n"` 而不是 `"text $variable !\n"`
+- 注释：C 风格（`//` 单行，`/* */` 块注释）
+- 函数成功返回 `>= 0`，出错返回 `< 0`
+- 对包含类/函数定义的文件（`*.class.php`、`*.lib.php`）使用 `include_once`
+- 对模板风格的文件（`*.inc.php`、`*.tpl.php`）使用 `include`
+- 核心代码中不得有死代码；不得使用 `SELECT *`
 
-### User Input — always use GETPOST
+### 用户输入 — 始终使用 GETPOST
 ```php
-// NEVER use $_GET/$_POST directly
+// 切勿直接使用 $_GET/$_POST
 $id      = GETPOST('id', 'int');
 $ref     = GETPOST('ref', 'alpha');
 $mytext  = GETPOST('mytext', 'alphanohtml');
-// Sanitized $_SERVER["PHP_SELF"] is handled by main.inc.php
+// $_SERVER["PHP_SELF"] 的清理由 main.inc.php 处理
 ```
 
-### Global Variables (always available after main.inc.php)
+### 全局变量（加载 main.inc.php 后始终可用）
 ```php
-$db          // Database connection handler
-$user        // Current user object
-$conf        // Configuration object
-$langs       // Language/translation object
-$mysoc       // Current company object
-$hookmanager // Hook factory
-$extrafields // Extrafields factory
+$db          // 数据库连接句柄
+$user        // 当前用户对象
+$conf        // 配置对象
+$langs       // 语言/翻译对象
+$mysoc       // 当前公司对象
+$hookmanager // 钩子工厂
+$extrafields // 附加字段工厂
 ```
 
-### Including Files
+### 包含文件
 ```php
-// Core Dolibarr class
+// Dolibarr 核心类
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
-// Module class (use dol_include_once for module files)
+// 模块类（对模块文件使用 dol_include_once）
 dol_include_once('/mymodule/class/myobject.class.php', 'MyObject');
 ```
 
-### Logging
+### 日志记录
 ```php
 dol_syslog("MyModule: action done", LOG_INFO);
 dol_syslog("MyModule: debug detail", LOG_DEBUG);
@@ -73,75 +73,75 @@ dol_syslog("MyModule: warning", LOG_WARNING);
 dol_syslog("MyModule: error: ".$this->error, LOG_ERR);
 ```
 
-### Dates — use Dolibarr functions only
+### 日期 — 仅使用 Dolibarr 函数
 ```php
-// Current timestamp (GMT)
+// 当前时间戳（GMT）
 $now = dol_now();
 
-// Build a date from parts
+// 根据各部分构建日期
 $date = dol_mktime($hour, $min, $sec, $month, $day, $year);
 
-// Format for display
-$formatted = dol_print_date($timestamp, 'day');        // date only
-$formatted = dol_print_date($timestamp, 'dayhour');    // date + time
+// 格式化用于显示
+$formatted = dol_print_date($timestamp, 'day');        // 仅日期
+$formatted = dol_print_date($timestamp, 'dayhour');    // 日期 + 时间
 
-// String to timestamp
+// 字符串转时间戳
 $ts = dol_stringtotime('2024-01-15');
 
-// Date arithmetic
-$future = dol_time_plus_duree($now, 1, 'm'); // +1 month
+// 日期运算
+$future = dol_time_plus_duree($now, 1, 'm'); // +1 个月
 
-// For SQL — convert timestamp to DB string and back
-$sqlval = $db->idate($timestamp);   // timestamp → DB string
-$tsback = $db->jdate($dbstring);    // DB string → timestamp
+// 用于 SQL —— 将时间戳与数据库字符串互转
+$sqlval = $db->idate($timestamp);   // 时间戳 → 数据库字符串
+$tsback = $db->jdate($dbstring);    // 数据库字符串 → 时间戳
 ```
 
-> Dates in DB are stored in PHP server timezone. Fields `tms` (auto-updated) are GMT.
+> 数据库中的日期按 PHP 服务器时区存储。字段 `tms`（自动更新）为 GMT。
 
-### Amounts & Float Numbers
+### 金额与浮点数
 ```php
-// ALWAYS clean float results with price2num
-$total = price2num($unitprice * $qty, 'MT');  // MU=unit price, MT=total, MS=other
-// For non-amounts use round()
+// 始终用 price2num 清理浮点结果
+$total = price2num($unitprice * $qty, 'MT');  // MU=单价, MT=总额, MS=其他
+// 非金额使用 round()
 $qty = round($calculated_qty, 2);
 ```
 
-### Working Directories
+### 工作目录
 ```php
 $dir = DOL_DATA_ROOT.'/mymodule';
 dol_mkdir($dir);
 $tmpdir = DOL_DATA_ROOT.'/mymodule/temp';
 ```
 
-### Version Comparison
+### 版本比较
 ```php
 if ((float) DOL_VERSION >= 17.0) {
-    // code for Dolibarr 17+
+    // Dolibarr 17+ 的代码
 }
-// Or with full version:
+// 或使用完整版本：
 $version = preg_split('/[\.-]/', DOL_VERSION);
 if (versioncompare($version, array(17, 0, 0)) >= 0) { ... }
 ```
 
 ---
 
-## SQL Rules
+## SQL 规则
 
-### Table Naming & Structure
-- Prefix: `llx_` (e.g. `llx_mymodule_object`)
-- Engine: InnoDB only
-- Always define `rowid INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY`
-- Standard fields to include:
+### 数据表命名与结构
+- 前缀：`llx_`（例如 `llx_mymodule_object`）
+- 引擎：仅 InnoDB
+- 始终定义 `rowid INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY`
+- 需要包含的标准字段：
 
 ```sql
 CREATE TABLE llx_mymodule_object (
     rowid        integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
     ref          varchar(30)  NOT NULL,
-    entity       integer DEFAULT 1 NOT NULL,  -- multicompany
-    ref_ext      varchar(255),                -- external system ref
-    -- your fields here
+    entity       integer DEFAULT 1 NOT NULL,  -- 多公司
+    ref_ext      varchar(255),                -- 外部系统引用
+    -- 你的字段写在这里
     date_creation datetime NOT NULL,
-    tms          timestamp,                   -- auto-updated by DB
+    tms          timestamp,                   -- 由数据库自动更新
     fk_user_creat integer NOT NULL,
     fk_user_modif integer,
     import_key   varchar(14),
@@ -151,37 +151,37 @@ CREATE TABLE llx_mymodule_object (
 ) ENGINE=InnoDB;
 ```
 
-### Field Types
-| Use case | Type |
+### 字段类型
+| 用途 | 类型 |
 |---|---|
-| Primary / foreign key | `integer` (or `bigint` for large tables) |
-| Boolean / small number | `smallint` |
-| Amount | `double(24,8)` |
-| VAT rate | `double(6,3)` |
-| Quantity | `real` |
-| String | `varchar(N)` |
-| Date+time (auto) | `timestamp` |
-| Date+time | `datetime` |
-| Date only | `date` |
-| Large text | `text` or `mediumtext` |
+| 主键 / 外键 | `integer`（大表用 `bigint`） |
+| 布尔 / 小数字 | `smallint` |
+| 金额 | `double(24,8)` |
+| 增值税率 | `double(6,3)` |
+| 数量 | `real` |
+| 字符串 | `varchar(N)` |
+| 日期+时间（自动） | `timestamp` |
+| 日期+时间 | `datetime` |
+| 仅日期 | `date` |
+| 大文本 | `text` 或 `mediumtext` |
 
-No `enum`, no `char(1)` (use `varchar`).
+不使用 `enum`、不使用 `char(1)`（使用 `varchar`）。
 
-### Keys
-- Primary: `rowid`
-- Unique keys: `uk_tablename_field`
-- Foreign keys: `fk_tablename_fieldname` — **soft FK only** (managed by PHP, no DB constraints to external tables)
-- Performance indexes: `idx_tablename_fieldname`
-- Key files: `llx_mytable.key.sql`
+### 键
+- 主键：`rowid`
+- 唯一键：`uk_tablename_field`
+- 外键：`fk_tablename_fieldname` —— **仅软外键**（由 PHP 管理，不对外部表建立数据库约束）
+- 性能索引：`idx_tablename_fieldname`
+- 键文件：`llx_mytable.key.sql`
 
 ```sql
 ALTER TABLE llx_mymodule_object ADD UNIQUE uk_mymodule_object_ref (ref, entity);
 ALTER TABLE llx_mymodule_object ADD INDEX idx_mymodule_object_status (status);
 ```
 
-### SQL Coding
+### SQL 编码
 ```php
-// Transactions
+// 事务
 $db->begin();
 $result = $db->query("INSERT INTO llx_mymodule_object (...) VALUES (...)");
 if ($result) {
@@ -192,7 +192,7 @@ if ($result) {
     return -1;
 }
 
-// SELECT — no SELECT *, no SQL date functions
+// SELECT —— 不使用 SELECT *，不使用 SQL 日期函数
 $sql  = "SELECT rowid, ref, status";
 $sql .= " FROM ".MAIN_DB_PREFIX."mymodule_object";
 $sql .= " WHERE entity = ".((int) $conf->entity);
@@ -208,120 +208,120 @@ if ($resql) {
     $db->free($resql);
 }
 
-// Dates in SQL — use PHP value, not SQL NOW()
+// SQL 中的日期 —— 使用 PHP 值，而非 SQL NOW()
 $sql .= " AND date_creation >= '".$db->idate(dol_now() - 86400 * 7)."'";
 
-// SQL IF — use $db->ifsql() for portability
+// SQL IF —— 为可移植性使用 $db->ifsql()
 $sql .= ", ".$db->ifsql("status = 1", "'active'", "'inactive'")." AS status_label";
 ```
 
-### Forbidden
+### 禁止事项
 - `SELECT *`
-- `NOW()`, `SYSDATE()`, `DATEDIFF()`, `DATE()` in SQL (use PHP `dol_now()` + `$db->idate()`)
+- SQL 中的 `NOW()`、`SYSDATE()`、`DATEDIFF()`、`DATE()`（使用 PHP 的 `dol_now()` + `$db->idate()`）
 - `GROUP_CONCAT`
 - `WITH ROLLUP`
-- `DELETE CASCADE` / `ON UPDATE CASCADE` (between core tables)
-- Database triggers / stored procedures
-- Quoting numeric values in INSERT/UPDATE
+- `DELETE CASCADE` / `ON UPDATE CASCADE`（核心表之间）
+- 数据库触发器 / 存储过程
+- 在 INSERT/UPDATE 中对数值加引号
 
 ---
 
-## HTML Rules
+## HTML 规则
 
-- HTML compliant (not XHTML); attributes lowercase and double-quoted
-- Use `dol_buildpath()` for absolute URLs
-- Use `img_picto()` for images
-- No forced column widths unless content length is known
-- JavaScript: wrap in `if ($conf->use_javascript_ajax) { ... }`
-- No popup windows (except tooltips)
-- No external template frameworks (Smarty, Twig…) — use `.tpl.php` files
+- 符合 HTML 规范（非 XHTML）；属性小写并用双引号
+- 使用 `dol_buildpath()` 生成绝对 URL
+- 使用 `img_picto()` 处理图片
+- 除非内容长度已知，否则不强制列宽
+- JavaScript：包裹在 `if ($conf->use_javascript_ajax) { ... }` 中
+- 不使用弹出窗口（工具提示除外）
+- 不使用外部模板框架（Smarty、Twig…）—— 使用 `.tpl.php` 文件
 
-### Standard CSS Classes
-| Class | Use |
+### 标准 CSS 类
+| 类 | 用途 |
 |---|---|
-| `liste_titre` | Header row of a table (`<tr>` and `<td>`) |
-| `pair` / `impair` | Alternating rows |
-| `flat` | Input fields (input, select, textarea) |
-| `button` | Submit buttons |
+| `liste_titre` | 表格的表头行（`<tr>` 和 `<td>`） |
+| `pair` / `impair` | 交替行 |
+| `flat` | 输入字段（input、select、textarea） |
+| `button` | 提交按钮 |
 
-### MVC Structure in PHP Pages
+### PHP 页面中的 MVC 结构
 ```php
-/* Actions (Controller) */
+/* 操作（控制器） */
 if ($action == 'save') {
-    // handle POST
+    // 处理 POST
 }
 
-/* View */
+/* 视图 */
 llxHeader('', $langs->trans('MyPage'), '', '', '', '', $morejs, $morecss);
-// output HTML
+// 输出 HTML
 llxFooter();
 ```
 
 ---
 
-## Design Patterns Used in Dolibarr
-- **Table Module** (Martin Fowler): one class per table
-- **Active Record**: CRUD methods in the class + business logic
-- **MVC**: Controller (`/* Actions */`) + View (`/* View */`) in same PHP file, separated by comment tags
-- No Composer for deployment; external libs embedded manually in source
+## Dolibarr 中使用的设计模式
+- **表模块**（Table Module，Martin Fowler 提出）：每个数据表一个类
+- **Active Record**：类中的 CRUD 方法 + 业务逻辑
+- **MVC**：控制器（`/* Actions */`）+ 视图（`/* View */`）在同一个 PHP 文件中，用注释标签分隔
+- 部署不使用 Composer；外部库手动嵌入源码
 
 ---
 
-## Common Errors and Solutions (Anti-Patterns)
+## 常见错误与解决方案（反模式）
 
-### Error 1: Using Global Superglobals Instead of GETPOST
+### 错误 1：使用全局超全局变量代替 GETPOST
 
-**Symptom**: Unvalidated user input, potential security vulnerabilities, inconsistent parameter handling across different request methods.
+**症状**：未经验证的用户输入、潜在的安全漏洞、不同请求方式下参数处理不一致。
 
-**Wrong Way** (不安全 - Unsafe):
+**错误做法**（不安全）:
 ```php
 <?php
-// This is unsafe and incorrect
+// 这样做不安全且不正确
 $userId = $_GET['id'];
 $actionType = $_POST['action'];
-$email = $_REQUEST['email'];  // Deprecated usage
+$email = $_REQUEST['email'];  // 已废弃的用法
 
-// No validation or type casting
+// 没有验证或类型转换
 $amount = $_POST['amount'] * 2;
 $date = $_GET['date'];
 
 if ($_POST['action'] == 'update') {
-    // Process update
+    // 处理更新
 }
 ```
 
-**Correct Way** (推荐 - Recommended):
+**正确做法**（推荐）:
 ```php
 <?php
-// Always use GETPOST for user input with proper type filtering
-$userId = GETPOST('id', 'int');  // Cast to integer
-$actionType = GETPOST('action', 'alpha');  // Alphabetic only
-$email = GETPOST('email', 'email');  // Email validation
-$amount = GETPOST('amount', 'float');  // Sanitize as float
+// 始终使用 GETPOST 获取用户输入，并进行适当的类型过滤
+$userId = GETPOST('id', 'int');  // 转换为整数
+$actionType = GETPOST('action', 'alpha');  // 仅字母
+$email = GETPOST('email', 'email');  // 邮箱验证
+$amount = GETPOST('amount', 'float');  // 按浮点数清理
 
-// Now multiply after proper type handling
+// 类型处理完成后再相乘
 $total = price2num($amount * 2, 'MT');
 $date = GETPOST('date', 'alphanohtml');
 
 if ($actionType == 'update' && $userId > 0) {
-    // Process update only if valid
+    // 仅在有效时才处理更新
     dol_syslog("User update action for userId: ".$userId, LOG_INFO);
 }
 ```
 
-**Why It Matters**: GETPOST handles sanitization automatically based on the filter type. It also protects against common attack vectors. Use these filter types: `int`, `alpha`, `alphanohtml`, `email`, `float`, `nohtml`, etc.
+**为什么重要**：GETPOST 会根据过滤类型自动进行清理，还能防范常见的攻击向量。可使用的过滤类型：`int`、`alpha`、`alphanohtml`、`email`、`float`、`nohtml` 等。
 
 ---
 
-### Error 2: Direct Date Functions in SQL
+### 错误 2：在 SQL 中直接使用日期函数
 
-**Symptom**: Database portability issues, timezone problems, poor performance, queries don't use indexes.
+**症状**：数据库可移植性问题、时区问题、性能差、查询无法使用索引。
 
-**Wrong Way** (不推荐 - Not Recommended):
+**错误做法**（不推荐）:
 ```php
 <?php
-// Database functions won't work across all databases
-// Performance issue: INDEX on date_creation can't be used
+// 数据库函数并非在所有数据库上都可用
+// 性能问题：无法使用 date_creation 上的索引
 $sql = "SELECT rowid, ref FROM ".MAIN_DB_PREFIX."mymodule_object";
 $sql .= " WHERE DATE(date_creation) = CURDATE()";
 $sql .= " AND DATEDIFF(NOW(), date_creation) > 7";
@@ -329,18 +329,18 @@ $sql .= " AND DATEDIFF(NOW(), date_creation) > 7";
 $resql = $db->query($sql);
 ```
 
-**Correct Way** (推荐 - Recommended):
+**正确做法**（推荐）:
 ```php
 <?php
-// Use PHP to calculate dates, then pass as value to SQL
-// This allows database to use indexes efficiently
-$now = dol_now();  // Current timestamp (GMT)
+// 使用 PHP 计算日期，然后以值的形式传给 SQL
+// 这样数据库可以高效地使用索引
+$now = dol_now();  // 当前时间戳（GMT）
 $today = dol_mktime(0, 0, 0, date('m', $now), date('d', $now), date('Y', $now));
 $sevenDaysAgo = $now - (7 * 24 * 3600);
 
 $sql = "SELECT rowid, ref FROM ".MAIN_DB_PREFIX."mymodule_object";
-$sql .= " WHERE date_creation >= '".$db->idate($today)."'";  // Convert to DB format
-$sql .= " AND date_creation < '".$db->idate($sevenDaysAgo)."'";  // Can now use index
+$sql .= " WHERE date_creation >= '".$db->idate($today)."'";  // 转换为数据库格式
+$sql .= " AND date_creation < '".$db->idate($sevenDaysAgo)."'";  // 现在可以使用索引
 
 $resql = $db->query($sql);
 if ($resql) {
@@ -351,50 +351,50 @@ if ($resql) {
 }
 ```
 
-**Why It Matters**: 
-- SQL functions like NOW(), DATEDIFF(), DATE() work differently across MySQL, PostgreSQL, etc.
-- Timezone handling is better in PHP (PHP uses server timezone consistently)
-- Indexes on date fields are ignored when SQL functions transform the field
+**为什么重要**：
+- SQL 函数如 NOW()、DATEDIFF()、DATE() 在 MySQL、PostgreSQL 等数据库上的行为不同。
+- PHP 对时区的处理更好（PHP 始终使用服务器时区）。
+- 当 SQL 函数对字段做转换时，日期字段上的索引会被忽略。
 
 ---
 
-### Error 3: Floating Point Precision in Money Calculations
+### 错误 3：金额计算中的浮点精度
 
-**Symptom**: Rounding errors, amount mismatches (e.g., 239.2 - 229.3 - 9.9 = 0.0 instead of 0.0 due to float precision).
+**症状**：舍入错误、金额不一致（例如由于浮点精度，239.2 - 229.3 - 9.9 得到 0.0 而非 0.0）。
 
-**Wrong Way** (不安全 - Unsafe):
+**错误做法**（不安全）:
 ```php
 <?php
-// Direct float math causes precision loss
+// 直接进行浮点运算会导致精度损失
 $unitPrice = 100.50;
 $quantity = 3;
-$total = $unitPrice * $quantity;  // Result may be 301.49999999...
+$total = $unitPrice * $quantity;  // 结果可能是 301.49999999...
 
-// Storing wrong value in database
+// 把错误的值存入数据库
 $sql = "INSERT INTO ".MAIN_DB_PREFIX."mymodule_line (amount)";
-$sql .= " VALUES ('".$total."')";  // String quoted number causes precision issues
+$sql .= " VALUES ('".$total."')";  // 字符串引号包裹的数字会导致精度问题
 $db->query($sql);
 
-// Wrong subtraction
+// 错误的减法
 $vat = 50.00;
 $total = 300.00;
-$subtotal = $total - $vat;  // May equal 249.99999... or 250.00000...
+$subtotal = $total - $vat;  // 可能等于 249.99999... 或 250.00000...
 ```
 
-**Correct Way** (推荐 - Recommended):
+**正确做法**（推荐）:
 ```php
 <?php
-// Always use price2num for amount calculations
+// 金额计算始终使用 price2num
 $unitPrice = 100.50;
 $quantity = 3;
-$total = price2num($unitPrice * $quantity, 'MT');  // MT = total price
+$total = price2num($unitPrice * $quantity, 'MT');  // MT = 总价
 
-// Insert without quotes on numeric values
+// 插入数值时不加引号
 $sql = "INSERT INTO ".MAIN_DB_PREFIX."mymodule_line (amount)";
-$sql .= " VALUES (".$total.")";  // Unquoted numeric value
+$sql .= " VALUES (".$total.")";  // 不加引号的数值
 $db->query($sql);
 
-// For non-amounts, use round()
+// 非金额使用 round()
 $vat = 50.00;
 $total = 300.00;
 $subtotal = price2num($total - $vat, 'MT');
@@ -402,51 +402,51 @@ $subtotal = price2num($total - $vat, 'MT');
 dol_syslog("Calculated subtotal: ".$subtotal, LOG_DEBUG);
 ```
 
-**Available Filters for price2num**:
-- `MU`: Unit price (prix unitaire)
-- `MT`: Total price (prix total)
-- `MS`: Other amounts
+**price2num 可用过滤器**：
+- `MU`：单价（prix unitaire）
+- `MT`：总价（prix total）
+- `MS`：其他金额
 
 ---
 
-### Error 4: Using include Instead of include_once
+### 错误 4：使用 include 代替 include_once
 
-**Symptom**: Multiple class definitions causing fatal errors, functions redefined, slow performance.
+**症状**：类重复定义导致致命错误、函数被重定义、性能下降。
 
-**Wrong Way** (不推荐 - Not Recommended):
+**错误做法**（不推荐）:
 ```php
 <?php
-// If this file is included in a loop or multiple times...
+// 如果此文件在循环中或多次被包含...
 include DOL_DOCUMENT_ROOT.'/custom/mymodule/class/myobject.class.php';
 include DOL_DOCUMENT_ROOT.'/custom/mymodule/class/myobject.class.php';
 
-// PHP error: Cannot declare class MyObject, class already exists
-// Performance: File read twice from disk
+// PHP 错误：Cannot declare class MyObject, class already exists
+// 性能：文件从磁盘读取两次
 ```
 
-**Correct Way** (推荐 - Recommended):
+**正确做法**（推荐）:
 ```php
 <?php
-// For files with class or function definitions
+// 对包含类或函数定义的文件
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 dol_include_once('/custom/mymodule/class/myobject.class.php', 'MyObject');
 
-// For template-style files (pure HTML + PHP, no class definitions)
+// 对模板风格的文件（纯 HTML + PHP，无类定义）
 include DOL_DOCUMENT_ROOT.'/custom/mymodule/templates/list.tpl.php';
 include DOL_DOCUMENT_ROOT.'/custom/mymodule/templates/header.inc.php';
 ```
 
-**Rule Summary**:
-- Use `include_once` or `require_once` for: `*.class.php`, `*.lib.php`
-- Use `include` for: `*.inc.php`, `*.tpl.php` (template-style files)
+**规则总结**：
+- 对以下文件使用 `include_once` 或 `require_once`：`*.class.php`、`*.lib.php`
+- 对以下文件使用 `include`：`*.inc.php`、`*.tpl.php`（模板风格文件）
 
 ---
 
-### Error 5: Using Global Variables Without Passing $db Parameter
+### 错误 5：使用全局变量而不传递 $db 参数
 
-**Symptom**: Code coupling, untestable DAO classes, unexpected database connection issues in certain contexts.
+**症状**：代码耦合、DAO 类难以测试、在某些上下文中出现意外的数据库连接问题。
 
-**Wrong Way** (不推荐 - Not Recommended):
+**错误做法**（不推荐）:
 ```php
 <?php
 class MyObject
@@ -455,15 +455,15 @@ class MyObject
     public $ref;
     private $error = '';
 
-    // No constructor parameter, depends on global $db
+    // 没有构造函数参数，依赖全局 $db
     public function fetch($id)
     {
-        global $db;  // Anti-pattern: direct global dependency
+        global $db;  // 反模式：直接依赖全局变量
         
         $sql = "SELECT rowid, ref FROM ".MAIN_DB_PREFIX."mymodule_object";
         $sql .= " WHERE rowid = ".((int) $id);
         
-        $resql = $db->query($sql);  // Using global $db
+        $resql = $db->query($sql);  // 使用全局 $db
         if ($resql && $db->num_rows($resql)) {
             $obj = $db->fetch_object($resql);
             $this->rowid = $obj->rowid;
@@ -474,22 +474,22 @@ class MyObject
     }
 }
 
-// Hard to test, requires global database connection
+// 难以测试，需要全局数据库连接
 $obj = new MyObject();
 $obj->fetch(1);
 ```
 
-**Correct Way** (推荐 - Recommended):
+**正确做法**（推荐）:
 ```php
 <?php
 class MyObject
 {
     public $rowid;
     public $ref;
-    public $db;  // Injected dependency
+    public $db;  // 注入的依赖
     private $error = '';
 
-    // Constructor accepts $db as parameter (dependency injection)
+    // 构造函数接受 $db 作为参数（依赖注入）
     public function __construct($db)
     {
         $this->db = $db;
@@ -497,7 +497,7 @@ class MyObject
 
     public function fetch($id)
     {
-        // No global statement needed, use injected $this->db
+        // 无需 global 语句，使用注入的 $this->db
         $sql = "SELECT rowid, ref FROM ".MAIN_DB_PREFIX."mymodule_object";
         $sql .= " WHERE rowid = ".((int) $id);
         
@@ -543,42 +543,42 @@ class MyObject
     }
 }
 
-// In your page/controller:
+// 在页面/控制器中：
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 dol_include_once('/custom/mymodule/class/myobject.class.php', 'MyObject');
 
-$object = new MyObject($db);  // Pass $db to constructor
+$object = new MyObject($db);  // 将 $db 传给构造函数
 $result = $object->fetch(1);
 ```
 
-**Benefits**:
-- Testable: Can inject mock database in unit tests
-- Reusable: Can use with different database connections
-- Clear dependencies: Easy to see what resources the class needs
-- No hidden globals: Code is more maintainable
+**好处**：
+- 可测试：可在单元测试中注入模拟数据库
+- 可复用：可与不同的数据库连接一起使用
+- 依赖清晰：容易看出类需要哪些资源
+- 无隐藏全局变量：代码更易维护
 
 ---
 
-## Best Practices (最佳实践)
+## 最佳实践
 
-### Best Practice 1: Strict Parameter Type Conversion
+### 最佳实践 1：严格参数类型转换
 
-**Description**: Always convert user input to expected types before using in business logic.
+**说明**：在业务逻辑中使用用户输入前，始终将其转换为期望的类型。
 
 ```php
 <?php
-// ID parameters
+// ID 参数
 $objectId = (int) GETPOST('id', 'int');
 if ($objectId <= 0) {
     dol_syslog("Invalid object ID", LOG_ERR);
     die('Invalid ID');
 }
 
-// Amount/price parameters
+// 金额/价格参数
 $amount = GETPOST('amount', 'float');
-$amount = price2num($amount, 'MU');  // Sanitize as unit price
+$amount = price2num($amount, 'MU');  // 按单价清理
 
-// Date parameters (timestamp or string)
+// 日期参数（时间戳或字符串）
 $dateStr = GETPOST('date', 'alphanohtml');
 $dateObj = dol_stringtotime($dateStr);
 if ($dateObj === 0) {
@@ -587,10 +587,10 @@ if ($dateObj === 0) {
     return -1;
 }
 
-// Boolean from checkbox
+// 来自复选框的布尔值
 $isActive = GETPOST('is_active', 'int') ? 1 : 0;
 
-// String with length validation
+// 带长度校验的字符串
 $ref = trim(GETPOST('ref', 'alphanohtml'));
 if (strlen($ref) < 1 || strlen($ref) > 30) {
     $this->error = 'Reference must be 1-30 characters';
@@ -600,9 +600,9 @@ if (strlen($ref) < 1 || strlen($ref) > 30) {
 
 ---
 
-### Best Practice 2: Transaction Handling in CRUD Methods
+### 最佳实践 2：CRUD 方法中的事务处理
 
-**Description**: Use transactions with try/catch for data integrity.
+**说明**：使用带 try/catch 的事务保证数据完整性。
 
 ```php
 <?php
@@ -610,11 +610,11 @@ class MyObject
 {
     public function create($user)
     {
-        // Start transaction
+        // 开始事务
         $this->db->begin();
         
         try {
-            // Validate before insert
+            // 插入前校验
             if (!$this->ref || strlen($this->ref) > 30) {
                 throw new Exception('Invalid reference');
             }
@@ -622,7 +622,7 @@ class MyObject
                 throw new Exception('Amount must be positive');
             }
 
-            // Main insert
+            // 主插入
             $sql = "INSERT INTO ".MAIN_DB_PREFIX."mymodule_object";
             $sql .= " (ref, entity, amount, status, date_creation, fk_user_creat)";
             $sql .= " VALUES (";
@@ -641,13 +641,13 @@ class MyObject
 
             $this->rowid = $this->db->last_insert_id(MAIN_DB_PREFIX.'mymodule_object');
 
-            // If success, commit and log
+            // 成功则提交并记录日志
             $this->db->commit();
             dol_syslog("MyObject created with ID ".$this->rowid, LOG_INFO);
             return $this->rowid;
 
         } catch (Exception $e) {
-            // On error, rollback and log
+            // 出错则回滚并记录日志
             $this->error = $e->getMessage();
             $this->db->rollback();
             dol_syslog("MyObject create failed: ".$this->error, LOG_ERR);
@@ -688,37 +688,37 @@ class MyObject
 
 ---
 
-### Best Practice 3: Permission Checking (权限检查)
+### 最佳实践 3：权限检查
 
-**Description**: Always verify user permissions before executing actions.
+**说明**：执行操作前始终校验用户权限。
 
 ```php
 <?php
-// Check permission to read object
+// 检查读取对象的权限
 if (!$user->rights->mymodule->object->read) {
     accessforbidden();
 }
 
-// Check permission to create
+// 检查创建权限
 if (!$user->rights->mymodule->object->create) {
     setEventMessages($langs->trans('NotAllowed'), null, 'errors');
     dol_syslog("User ".$user->login." tried to create without permission", LOG_WARNING);
     $action = '';
 }
 
-// Check permission for specific action
+// 检查特定操作的权限
 if ($action == 'delete' && !$user->rights->mymodule->object->delete) {
     setEventMessages($langs->trans('NotAllowed'), null, 'errors');
     dol_syslog("User attempted deletion without permission", LOG_WARNING);
     $action = '';
 }
 
-// For specific menu items (like a custom action)
+// 针对特定菜单项（如自定义操作）
 if (!checkUserAccessToModule($user, 'mymodule')) {
     accessforbidden();
 }
 
-// Check if user can access specific company/entity
+// 检查用户能否访问特定公司/实体
 if ($object->entity != $user->entity && !$user->admin) {
     accessforbidden('NotAllowed');
 }
@@ -726,29 +726,29 @@ if ($object->entity != $user->entity && !$user->admin) {
 
 ---
 
-### Best Practice 4: Logging and Debugging (日志记录)
+### 最佳实践 4：日志记录
 
-**Description**: Use dol_syslog with appropriate levels for different situations.
+**说明**：根据不同情况使用 dol_syslog 与适当的日志级别。
 
 ```php
 <?php
-// DEBUG: Detailed development information
+// DEBUG：详细的开发信息
 dol_syslog("MyObject: Fetching ID ".$id.", user=".$user->login, LOG_DEBUG);
 dol_syslog("SQL Query: ".$sql, LOG_DEBUG);
 
-// INFO: Normal operational information
+// INFO：正常的运行信息
 dol_syslog("MyObject ".$objectId." created successfully by ".$user->login, LOG_INFO);
 dol_syslog("MyModule: Processing batch import with ".$totalRecords." records", LOG_INFO);
 
-// WARNING: Potentially problematic conditions
+// WARNING：潜在的问题情况
 dol_syslog("MyObject: Duplicate reference ".$ref." detected", LOG_WARNING);
 dol_syslog("MyModule: Database query took ".($timeEnd - $timeStart)." ms", LOG_WARNING);
 
-// ERROR: Error conditions that need attention
+// ERROR：需要关注的错误情况
 dol_syslog("MyObject: Failed to create - ".$this->error, LOG_ERR);
 dol_syslog("MyModule: Database connection failed", LOG_ERR);
 
-// In action controllers:
+// 在操作控制器中：
 if ($action == 'save') {
     $result = $object->create($user);
     if ($result > 0) {
@@ -763,47 +763,47 @@ if ($action == 'save') {
 }
 ```
 
-**Log Levels**:
-- `LOG_DEBUG`: Detailed debugging info (variable values, SQL queries)
-- `LOG_INFO`: Normal operational events (object created, action completed)
-- `LOG_WARNING`: Warnings about potential issues (duplicates, slow queries, deprecated code)
-- `LOG_ERR`: Error conditions (query failed, validation failed, exception caught)
+**日志级别**：
+- `LOG_DEBUG`：详细调试信息（变量值、SQL 查询）
+- `LOG_INFO`：正常操作事件（对象已创建、操作已完成）
+- `LOG_WARNING`：关于潜在问题的警告（重复项、慢查询、废弃代码）
+- `LOG_ERR`：错误情况（查询失败、校验失败、捕获到异常）
 
 ---
 
-## PSR-12 Quick Checklist (快速检查表)
+## PSR-12 快速检查表
 
-### Files and PHP Tags
-- [ ] File starts with `<?php` (not `<?` or `<?=`)
-- [ ] File ends with no extra newlines or closing `?>`
-- [ ] File uses LF line endings (Unix format), not CR/LF
-- [ ] File is saved as UTF-8 or ASCII
+### 文件与 PHP 标签
+- [ ] 文件以 `<?php` 开头（而非 `<?` 或 `<?=`）
+- [ ] 文件结尾没有多余换行或闭合的 `?>`
+- [ ] 文件使用 LF 行结尾（Unix 格式），而非 CR/LF
+- [ ] 文件以 UTF-8 或 ASCII 保存
 
-### Spacing and Indentation
-- [ ] Indent code with tabs (not spaces)
-- [ ] Classes and functions: blank line before and after
-- [ ] Opening brace `{` on same line as function/class/if/for/etc.
-- [ ] Line length soft limit: 120 characters (hard limit: 1000)
-- [ ] No trailing whitespace at end of lines
+### 空格与缩进
+- [ ] 用制表符缩进代码（而非空格）
+- [ ] 类和函数：前后各空一行
+- [ ] 左花括号 `{` 与函数/类/if/for 等同在行尾
+- [ ] 行长度软限制：120 字符（硬限制：1000）
+- [ ] 行尾无多余空白
 
-### Classes and Properties
-- [ ] Class name: PascalCase (MyClass, MyObject)
-- [ ] Method name: camelCase (myMethod, getData)
-- [ ] Property name: camelCase ($myProperty)
-- [ ] Constant name: UPPER_CASE (CONST_VALUE)
-- [ ] Visibility keyword on all properties (`public`, `private`, `protected`)
+### 类与属性
+- [ ] 类名：PascalCase（MyClass、MyObject）
+- [ ] 方法名：camelCase（myMethod、getData）
+- [ ] 属性名：camelCase（$myProperty）
+- [ ] 常量名：UPPER_CASE（CONST_VALUE）
+- [ ] 所有属性带可见性关键字（`public`、`private`、`protected`）
 
-### Functions and Methods
+### 函数与方法
 ```php
 <?php
-// Correct spacing and formatting
+// 正确的空格与格式
 function myFunction($param1, $param2, $param3 = 'default')
 {
-    // Opening brace on same line, body indented
+    // 左花括号在同一行，函数体缩进
     $variable = $param1 + $param2;
 
     if ($condition) {
-        // Space after control structures
+        // 控制结构后加空格
         return $variable;
     }
 
@@ -812,7 +812,7 @@ function myFunction($param1, $param2, $param3 = 'default')
 
 class MyClass
 {
-    // Blank line between methods
+    // 方法之间空一行
     public function methodOne()
     {
         // code
@@ -825,7 +825,7 @@ class MyClass
 }
 ```
 
-### Control Structures
+### 控制结构
 ```php
 <?php
 // if/elseif/else
@@ -837,7 +837,7 @@ if ($condition) {
     // code
 }
 
-// Loop structures
+// 循环结构
 foreach ($array as $key => $value) {
     // code
 }
@@ -863,14 +863,14 @@ switch ($var) {
 }
 ```
 
-### Arrays and Variables
+### 数组与变量
 ```php
 <?php
-// Variable interpolation: outside quotes
-$text = "Hello ".$name." world";  // Correct
-// $text = "Hello $name world";     // Wrong (interpolated in quotes)
+// 变量插值：放在引号外
+$text = "Hello ".$name." world";  // 正确
+// $text = "Hello $name world";     // 错误（在引号内插值）
 
-// Array declarations
+// 数组声明
 $simpleArray = [1, 2, 3, 4];
 
 $associativeArray = [
@@ -883,37 +883,37 @@ $result = function ($param1, $param2) {
 };
 ```
 
-### Operators and Comparison
+### 运算符与比较
 ```php
 <?php
-// Operator spacing
+// 运算符空格
 $result = $a + $b;
-$isEqual = $a === $b;  // Use === instead of ==
-$isNotEqual = $a !== $b;  // Use !== instead of !=
+$isEqual = $a === $b;  // 使用 === 而非 ==
+$isNotEqual = $a !== $b;  // 使用 !== 而非 !=
 
-// Assignment chaining NOT allowed
-$var1 = $var2 = $var3 = 1;  // Wrong (slower)
+// 不允许链式赋值
+$var1 = $var2 = $var3 = 1;  // 错误（更慢）
 
-// Use individual assignments instead
+// 改为逐个赋值
 $var1 = 1;
 $var2 = 1;
-$var3 = 1;  // Correct
+$var3 = 1;  // 正确
 ```
 
 ---
 
-## Function Return Value Conventions (函数返回值规范)
+## 函数返回值规范
 
-Dolibarr uses a standardized return value convention for all CRUD operations and most functions:
+Dolibarr 对所有 CRUD 操作及大多数函数采用统一的返回值约定：
 
-### Return Value Rules
-- **>= 0**: Success (typically returns new rowid or 1)
-- **< 0**: Failure (specific error codes: -1, -2, -3, etc.)
-- **0**: Not executed (condition not met, not an error)
+### 返回值规则
+- **>= 0**：成功（通常返回新的 rowid 或 1）
+- **< 0**：失败（具体错误码：-1、-2、-3 等）
+- **0**：未执行（条件不满足，非错误）
 
-### Common DAO Methods Return Values
+### 常见 DAO 方法返回值
 
-#### fetch($id) - Fetch a Record
+#### fetch($id) - 读取一条记录
 ```php
 <?php
 public function fetch($id)
@@ -930,23 +930,23 @@ public function fetch($id)
         $this->ref = $obj->ref;
         $this->status = (int) $obj->status;
         $this->db->free($resql);
-        return $this->rowid;  // Return: >= 0 (the rowid)
+        return $this->rowid;  // 返回：>= 0（rowid）
     }
     
     $this->db->free($resql);
-    return -1;  // Return: < 0 (record not found)
+    return -1;  // 返回：< 0（记录未找到）
 }
 ```
 
-#### create($user) - Create New Record
+#### create($user) - 创建新记录
 ```php
 <?php
 public function create($user)
 {
-    // Validate input
+    // 校验输入
     if (!$this->ref) {
         $this->error = 'Reference required';
-        return -1;  // Return: < 0 (validation failed)
+        return -1;  // 返回：< 0（校验失败）
     }
     
     $this->db->begin();
@@ -962,28 +962,28 @@ public function create($user)
         if ($resql) {
             $this->rowid = $this->db->last_insert_id(MAIN_DB_PREFIX.'mymodule_object');
             $this->db->commit();
-            return (int) $this->rowid;  // Return: >= 0 (new rowid)
+            return (int) $this->rowid;  // 返回：>= 0（新的 rowid）
         } else {
             $this->error = $this->db->lasterror();
             $this->db->rollback();
-            return -1;  // Return: < 0 (database error)
+            return -1;  // 返回：< 0（数据库错误）
         }
     } catch (Exception $e) {
         $this->error = $e->getMessage();
         $this->db->rollback();
-        return -2;  // Return: < 0 (exception caught)
+        return -2;  // 返回：< 0（捕获到异常）
     }
 }
 ```
 
-#### update($user) - Update Existing Record
+#### update($user) - 更新已有记录
 ```php
 <?php
 public function update($user)
 {
     if ($this->rowid <= 0) {
         $this->error = 'Record not found';
-        return -1;  // Return: < 0 (invalid record ID)
+        return -1;  // 返回：< 0（无效的记录 ID）
     }
     
     $this->db->begin();
@@ -997,69 +997,69 @@ public function update($user)
         $resql = $this->db->query($sql);
         if ($resql) {
             $this->db->commit();
-            return 1;  // Return: >= 0 (success, return 1)
+            return 1;  // 返回：>= 0（成功，返回 1）
         } else {
             $this->error = $this->db->lasterror();
             $this->db->rollback();
-            return -1;  // Return: < 0 (update failed)
+            return -1;  // 返回：< 0（更新失败）
         }
     } catch (Exception $e) {
         $this->error = $e->getMessage();
         $this->db->rollback();
-        return -2;  // Return: < 0 (exception)
+        return -2;  // 返回：< 0（异常）
     }
 }
 ```
 
-#### delete($user) - Delete a Record
+#### delete($user) - 删除一条记录
 ```php
 <?php
 public function delete($user)
 {
     if ($this->rowid <= 0) {
         $this->error = 'Record not found';
-        return -1;  // Return: < 0 (invalid record ID)
+        return -1;  // 返回：< 0（无效的记录 ID）
     }
     
-    // Check permission
+    // 检查权限
     if (!$user->rights->mymodule->delete) {
         $this->error = 'Permission denied';
-        return -3;  // Return: < 0 (permission error)
+        return -3;  // 返回：< 0（权限错误）
     }
     
     $this->db->begin();
     try {
-        // Delete related records first (if needed)
+        // 先删除关联记录（如需要）
         $sql = "DELETE FROM ".MAIN_DB_PREFIX."mymodule_line";
         $sql .= " WHERE fk_mymodule_object = ".((int) $this->rowid);
-        $this->db->query($sql);  // Ignore result for related records
+        $this->db->query($sql);  // 关联记录忽略结果
         
-        // Delete main record
+        // 删除主记录
         $sql = "DELETE FROM ".MAIN_DB_PREFIX."mymodule_object";
         $sql .= " WHERE rowid = ".((int) $this->rowid);
         
         $resql = $this->db->query($sql);
         if ($resql) {
             $this->db->commit();
-            return 1;  // Return: >= 0 (success)
+            return 1;  // 返回：>= 0（成功）
         } else {
             $this->error = $this->db->lasterror();
             $this->db->rollback();
-            return -1;  // Return: < 0 (deletion failed)
+            return -1;  // 返回：< 0（删除失败）
         }
     } catch (Exception $e) {
         $this->error = $e->getMessage();
         $this->db->rollback();
-        return -2;  // Return: < 0 (exception)
+        return -2;  // 返回：< 0（异常）
     }
 }
 ```
 
-### In Controller/Actions
+### 在控制器/操作中
 
 ```php
 <?php
-// Example of handling return values in a controller
+// 在控制器中处理返回值的示例
 
 if ($action == 'create') {
     $object = new MyObject($db);
@@ -1068,17 +1068,17 @@ if ($action == 'create') {
     
     $result = $object->create($user);
     if ($result > 0) {
-        // Success: result is the rowid
+        // 成功：结果是 rowid
         dol_syslog("Created object ID ".$result, LOG_INFO);
         setEventMessages($langs->trans('ObjectCreated'), null, 'mesgs');
         header('Location: '.$_SERVER['PHP_SELF'].'?id='.$result);
         exit;
     } else if ($result == 0) {
-        // Not executed: condition not met (shouldn't happen in create)
+        // 未执行：条件不满足（create 中不应出现）
         dol_syslog("Create returned 0 (condition not met)", LOG_WARNING);
         setEventMessages('Condition not met', null, 'warnings');
     } else {
-        // Failure: result is < 0
+        // 失败：结果 < 0
         dol_syslog("Create failed: ".$object->error, LOG_ERR);
         setEventMessages($object->error, null, 'errors');
     }
@@ -1091,13 +1091,13 @@ if ($action == 'fetch') {
         $result = $object->fetch($objectId);
         
         if ($result > 0) {
-            // Success: object loaded
+            // 成功：对象已加载
             echo "Object ref: ".$object->ref;
         } else if ($result == 0) {
-            // Object not executed (shouldn't happen)
+            // 对象未执行（不应出现）
             setEventMessages('Object not found', null, 'warnings');
         } else {
-            // Failure: record not found
+            // 失败：记录未找到
             setEventMessages('Record not found', null, 'errors');
         }
     } else {
@@ -1106,13 +1106,13 @@ if ($action == 'fetch') {
 }
 ```
 
-### Standard Error Codes
+### 标准错误码
 
-While not enforced, common convention for error codes:
-- `-1`: General error (invalid data, not found, database error)
-- `-2`: Exception caught (validation failed, business rule violation)
-- `-3`: Permission denied
-- `-4`: Invalid state (e.g., trying to update a draft that was already validated)
-- `0`: Success but condition not met (used in update filters, delete conditions)
-- `1`: General success (for operations other than create)
-- `>1`: Success with additional info (e.g., create returns new rowid)
+虽未强制，但常见的错误码约定：
+- `-1`：一般错误（数据无效、未找到、数据库错误）
+- `-2`：捕获到异常（校验失败、违反业务规则）
+- `-3`：权限被拒绝
+- `-4`：无效状态（例如尝试更新一个已确认的草稿）
+- `0`：成功但条件不满足（用于更新过滤、删除条件）
+- `1`：一般成功（用于 create 之外的操作）
+- `>1`：成功且带附加信息（例如 create 返回新的 rowid）

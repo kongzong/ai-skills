@@ -26,19 +26,17 @@
 
 #### 安装 PHPUnit
 
-从官方 GitHub 仓库下载最新发布版本：
+推荐通过 Composer 安装（版本需匹配 PHP 版本，Dolibarr 8+ 使用 PHPUnit 8/9）：
 
 ```bash
-# 从 GitHub 下载 PHPUnit
-wget https://github.com/sebastianbergmann/phpunit/releases/download/9.5.13/phpunit-9.5.13.phar
-
-# 移动到 PHP 包含路径
-sudo mv phpunit-9.5.13.phar /usr/local/bin/phpunit
-sudo chmod +x /usr/local/bin/phpunit
+# 在模块目录下
+composer require --dev phpunit/phpunit ^9.6
 
 # 验证安装
-phpunit --version
+vendor/bin/phpunit --version
 ```
+
+Dolibarr 核心的测试套件位于 `test/phpunit/`，可直接参考其 `phpunit.xml` 与 bootstrap 配置（见下方「Dolibarr 测试目录结构」）。
 
 #### XDebug 扩展（代码覆盖率支持）
 
@@ -709,17 +707,17 @@ grep "ERROR\|Fatal\|Exception" /var/www/dolibarr/documents/dolibarr.log
 sed -n '/2026-07-13/p' /var/www/dolibarr/documents/dolibarr.log
 ```
 
-#### Windows
+#### Windows 环境
 
 ```cmd
 REM 实时查看日志（需要 GNU Utils）
-tail -f C:\xampp\htdocs\dolibarr\documents\dolibarr.log
+tail -f documents\dolibarr.log
 
 REM 或使用 PowerShell
-Get-Content -Path "C:\xampp\htdocs\dolibarr\documents\dolibarr.log" -Wait
+Get-Content -Path "documents\dolibarr.log" -Wait
 
 REM 搜索错误
-Select-String "ERROR" "C:\xampp\htdocs\dolibarr\documents\dolibarr.log"
+Select-String "ERROR" "documents\dolibarr.log"
 ```
 
 ### Web 服务器日志
