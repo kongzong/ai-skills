@@ -59,6 +59,19 @@
 
 ---
 
+### ⏰ [omarchy-plugin-dev](./omarchy-plugin-dev/) — Omarchy 4 Shell 插件开发
+
+> 在 Omarchy 4（Hyprland + Quickshell）上开发、调试、安装、发布栏插件（bar widget）/ 悬浮面板的实战经验包。全部条目来自真实插件（hourly-chime 整点报时）开发过程中踩过的坑。
+
+**触发场景**：开发 omarchy 插件、栏图标不显示、插件静默加载失败、manifest.json 报错、QML 组件行为异常、查找 Nerd Font 图标码位  
+**内容包含**：
+- 插件契约：目录结构、manifest.json 字段、`omarchy.*` 保留前缀、启用与验证流程
+- 官方组件复用：Panel / BarIconButton / KeyboardPanel / ToggleSwitch / FileView 的正确用法
+- 9 条高频陷阱（Timer 不能放进面板容器、热重载缓存需 restart shell、ToggleSwitch 不自动翻转等）
+- 日志调试法（journalctl 按 PID 过滤）、纯 Python 解析 TTF 字形码位脚本（scripts/find_glyph.py）
+
+---
+
 ## 🚀 使用方式
 
 每个 Skill 本质上是一组 Markdown 文件，可以被任何支持 Skill 机制的 AI Agent 加载使用。
